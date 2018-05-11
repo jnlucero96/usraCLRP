@@ -3,6 +3,8 @@
 # created on: 3 May 2018 08:23:46
 # purpose: loading 3ddose files for plotting
 
+from __future__ import division
+
 import numpy
 
 class DoseFile(object):
@@ -58,7 +60,9 @@ class DoseFile(object):
         self.positions = positions
         self.spacing = [numpy.diff(p) for p in self.positions]
         self.resolution = [s[0] for s in self.spacing if s.all()]
-        self.origin = numpy.add( [p[0] for p in positions], numpy.array(self.resolution)/2.)
+        self.origin = numpy.add( 
+            [p[0] for p in positions], numpy.array(self.resolution)/2.
+            )
         
         assert len(self.resolution) == 3, "Non-linear resolution in either x, y or z."
         
