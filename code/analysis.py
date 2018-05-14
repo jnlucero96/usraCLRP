@@ -729,14 +729,14 @@ def isodose_plots():
     target_dir = '/Users/JLucero/MPhysProj/results_not_to_git'
 
     file_dict = {
-        (0,0):target_dir + '/mlwa_270.phantom_wo_applicator.3ddose',
-        (0,1):target_dir + '/mlwa_270_2.phantom_wo_applicator.3ddose',
-        (0,2):target_dir + '/mlwa_270_3.phantom_wo_applicator.3ddose',
-        (0,3):target_dir + '/mlwa_270_4.phantom_wo_applicator.3ddose',
-        (1,0):target_dir + '/mlwa_270_5.phantom_wo_applicator.3ddose',
-        (1,1):target_dir + '/mlwa_270_6.phantom_wo_applicator.3ddose',
-        (1,2):target_dir + '/mlwa_270_7.phantom_wo_applicator.3ddose',
-        (1,3):target_dir + '/mlwa_270_8.phantom_wo_applicator.3ddose'
+        (0,0):target_dir + '/mlwa.phantom_wo_applicator.3ddose',
+        (0,1):target_dir + '/mlwa_2.phantom_wo_applicator.3ddose',
+        (0,2):target_dir + '/mlwa_3.phantom_wo_applicator.3ddose',
+        (0,3):target_dir + '/mlwa_4.phantom_wo_applicator.3ddose',
+        (1,0):target_dir + '/mlwa_5.phantom_wo_applicator.3ddose',
+        (1,1):target_dir + '/mlwa_6.phantom_wo_applicator.3ddose',
+        (1,2):target_dir + '/mlwa_7.phantom_wo_applicator.3ddose',
+        (1,3):target_dir + '/mlwa_8.phantom_wo_applicator.3ddose'
     }
 
     label_dict = {
