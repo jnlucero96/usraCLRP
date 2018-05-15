@@ -102,19 +102,19 @@ def generate_tdvh():
     for index in xrange(8):
 
         main_base_data = DoseFile(file_base_dict[index])
-        data_base_flat = main_base_data.dose.flatten() * 2.2861e14 # converts to Gy; norm to treatment time
+        # data_base_flat = main_base_data.dose.flatten() * 2.2861e14 # converts to Gy; norm to treatment time
         data_base_flat = main_base_data.dose.flatten() * 8.2573429808917e13 # converts to Gy; norm to individual max dwell time
         
         main_90_data = DoseFile(file_90_dict[index])
-        data_90_flat = main_90_data.dose.flatten() * 2.2861e14 # converts to Gy; norm to treatment time
+        # data_90_flat = main_90_data.dose.flatten() * 2.2861e14 # converts to Gy; norm to treatment time
         data_90_flat = main_90_data.dose.flatten() * 8.2573429808917e13 # converts to Gy; norm to individual max dwell time
         
         main_180_data = DoseFile(file_180_dict[index])
-        data_180_flat = main_180_data.dose.flatten() * 2.2861e14 # converts to Gy; norm to treatment time
+        # data_180_flat = main_180_data.dose.flatten() * 2.2861e14 # converts to Gy; norm to treatment time
         data_180_flat = main_180_data.dose.flatten() * 8.2573429808917e13 # converts to Gy; norm to individual max dwell time
 
         main_270_data = DoseFile(file_270_dict[index])
-        data_270_flat = main_270_data.dose.flatten() * 2.2861e14  # converts to Gy; norm to treatment time
+        # data_270_flat = main_270_data.dose.flatten() * 2.2861e14  # converts to Gy; norm to treatment time
         data_270_flat = main_270_data.dose.flatten() * 8.2573429808917e13  # converts to Gy; norm to individual max dwell time
 
         n_base, bin_base, __ = ax[0].hist(
@@ -364,7 +364,7 @@ def dose_position_plots():
     fig.savefig(pwd + '/dosage_comparison.pdf')
 
 
-def rel_dose_position_plots():
+def rel_dose_position_plot():
     """
     Description:
     Takes any number of .3ddose files and plots a plethora of diagnostic plots 
@@ -391,7 +391,7 @@ def rel_dose_position_plots():
         target_dir + '/mlwa_8.phantom_wo_applicator.3ddose'
     ]
 
-    shielded_file_list = [
+    shielded_file_90_list = [
         target_dir + '/mlwa_90.phantom_wo_applicator.3ddose',
         target_dir + '/mlwa_90_2.phantom_wo_applicator.3ddose',
         target_dir + '/mlwa_90_3.phantom_wo_applicator.3ddose',
@@ -400,6 +400,28 @@ def rel_dose_position_plots():
         target_dir + '/mlwa_90_6.phantom_wo_applicator.3ddose',
         target_dir + '/mlwa_90_7.phantom_wo_applicator.3ddose',
         target_dir + '/mlwa_90_8.phantom_wo_applicator.3ddose'
+    ]
+
+    shielded_file_180_list = [
+        target_dir + '/mlwa_180.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_180_2.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_180_3.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_180_4.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_180_5.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_180_6.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_180_7.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_180_8.phantom_wo_applicator.3ddose'
+    ]
+
+    shielded_file_270_list = [
+        target_dir + '/mlwa_270.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_270_2.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_270_3.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_270_4.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_270_5.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_270_6.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_270_7.phantom_wo_applicator.3ddose',
+        target_dir + '/mlwa_270_8.phantom_wo_applicator.3ddose'
     ]
 
     label_list = [
@@ -436,37 +458,72 @@ def rel_dose_position_plots():
     )
     ax_twin = ax.twinx()
 
-    for index, file_name in enumerate(shielded_file_list):
+    for index, file_90_name in enumerate(shielded_file_90_list):
 
-        if index == 3:
+        if index == 1:
             
 
             unshielded_full_data = DoseFile(unshielded_file_list[index])
-            full_data = DoseFile(file_name)
+            shield_90_data = DoseFile(file_90_name)
+            shield_180_data = DoseFile(shielded_file_180_list[index])
+            shield_270_data = DoseFile(shielded_file_270_list[index])
 
-            Nx, Ny, Nz = full_data.shape
+            Nx, Ny, Nz = unshielded_full_data.shape
 
             # full_data.dose *= 2.2861e14 # scale to total treatment time
             # full_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
 
-            full_data.dose /= unshielded_full_data.dose
+            shield_90_data.dose /= unshielded_full_data.dose
+            shield_180_data.dose /= unshielded_full_data.dose
+            shield_270_data.dose /= unshielded_full_data.dose
 
-            x_min, x_max = full_data.x_extent
-            y_min, y_max = full_data.y_extent
-            z_min, z_max = full_data.z_extent
+            x_min, x_max = unshielded_full_data.x_extent
+            y_min, y_max = unshielded_full_data.y_extent
+            z_min, z_max = unshielded_full_data.z_extent
 
             ax.plot(
-                linspace(x_min, -0.1, Nx//2), full_data.dose[Nz // 2, Ny // 2, :Nx//2],
-                # yerr=full_data.uncertainty[Nz // 2, Ny // 2, :],
-                lw=3.0, label=label_list[index], color=color_list[index]
+                linspace(x_min, -1.6, (Nx//2 - 8) // 2), 
+                shield_90_data.dose[Nz // 2 + 25, Ny // 2, :Nx//2 - 8][::2],
+                lw=0.0, label='90 degrees',
+                color='darkgreen', marker='o', 
+                markersize=10
             )
             ax_twin.plot(
-                linspace(0.1, x_max, Nx//2), full_data.dose[Nz // 2, Ny // 2, Nx//2:],
-                # yerr=full_data.uncertainty[Nz // 2, Ny // 2, :],
-                lw=3.0, label=label_list[index], color=color_list[index]
+                linspace(1.6, x_max, (Nx//2 - 8) // 2), 
+                shield_90_data.dose[Nz // 2 + 25, Ny // 2, Nx//2 + 8:][::2],
+                lw=0.0, color='darkgreen', marker='o', 
+                markersize=10
             )
 
-    ax.legend(loc=0, prop={'size': 8})
+            ax.plot(
+                linspace(x_min, -1.6, (Nx//2 - 8) // 2), 
+                shield_180_data.dose[Nz // 2 + 25, Ny // 2, :Nx//2 - 8][::2],
+                lw=0.0, label='180 degrees', 
+                color='purple', marker='s', 
+                markersize=10
+            )
+            ax_twin.plot(
+                linspace(1.6, x_max, (Nx//2 - 8) // 2), 
+                shield_180_data.dose[Nz // 2 + 25, Ny // 2, Nx//2 + 8:][::2],
+                lw=0.0, color='purple', marker='s', 
+                markersize=10
+            )
+
+            ax.plot(
+                linspace(x_min, -1.6, (Nx//2 - 8) // 2), 
+                shield_270_data.dose[Nz // 2 + 25, Ny // 2, :Nx//2 - 8][::2],
+                lw=0.0, label='270 degrees', 
+                color='darkorange', marker='^', 
+                markersize=10
+            )
+            ax_twin.plot(
+                linspace(1.6, x_max, (Nx//2 - 8) // 2), 
+                shield_270_data.dose[Nz // 2 + 25, Ny // 2, Nx//2 + 8:][::2],
+                lw=0.0, color='darkorange', marker='^', 
+                markersize=10
+            )
+
+    ax.legend(loc=0, prop={'size': 18})
     ax.grid(True)
     ax.set_title(title_list[0], fontsize=20)
     ax.set_ylim([0.8, 1.05])
@@ -474,10 +531,9 @@ def rel_dose_position_plots():
     ax.yaxis.set_tick_params(labelsize=17)
     ax_twin.set_ylim([0.0, 0.5])
     ax_twin.yaxis.set_tick_params(labelsize=17)
-    # ax.vlines([-1.5],0.8,1.10)
     ax_twin.vlines([-1.5,1.5],0,1.0)
 
-    ax.set_xticks(arange(z_min, z_max+1, 2))
+    ax.set_xticks(arange(z_min, z_max + 1, 2))
 
     fig.text(
         0.01, 0.48, 'Relative Dose',
@@ -507,8 +563,171 @@ def rel_dose_position_plots():
     fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
     fig.savefig(pwd + '/relative_dosage_comparison.pdf')
+
+
+def isodose_plot():
+    """
+    Description:
+    Takes any number of .3ddose files and plots a plethora of diagnostic plots 
+    from the data
+
+    Inputs:
+    :name list_file: a list of file names that are to be loaded
+    :type list_file: list
+    """
+
+    pwd = getcwd()
+
+    # target_dir = '/Users/JLucero/MPhysProj/results_not_to_git' # for home
+    target_dir = '/Users/student/research/results_not_to_git'  # for work
+
+    file_dict = {
+        (0, 0): target_dir + '/mlwa_270.phantom_wo_applicator.3ddose',
+        (0, 1): target_dir + '/mlwa_270_2.phantom_wo_applicator.3ddose',
+        (0, 2): target_dir + '/mlwa_270_3.phantom_wo_applicator.3ddose',
+        (0, 3): target_dir + '/mlwa_270_4.phantom_wo_applicator.3ddose',
+        (1, 0): target_dir + '/mlwa_270_5.phantom_wo_applicator.3ddose',
+        (1, 1): target_dir + '/mlwa_270_6.phantom_wo_applicator.3ddose',
+        (1, 2): target_dir + '/mlwa_270_7.phantom_wo_applicator.3ddose',
+        (1, 3): target_dir + '/mlwa_270_8.phantom_wo_applicator.3ddose'
+    }
+
+    label_dict = {
+        (0, 0): 'Base Config.',
+        (0, 1): 'Config. 2',
+        (0, 2): 'Config. 3',
+        (0, 3): 'Config. 4',
+        (1, 0): 'Config. 5',
+        (1, 1): 'Config. 6',
+        (1, 2): 'Config. 7',
+        (1, 3): 'Config. 8'
+    }
+
+    fig, ax = subplots(
+        1, 1, figsize=(10, 10),
+        sharex='all', sharey='all'
+    )
+    fig2, ax2 = subplots(
+        1,1, figsize=(10, 10),
+        sharex='all', sharey='all'
+    )
+
+    for i in xrange(2):
+        for j in xrange(4):
+
+            if i == 0 and j == 1:
+
+                full_data = DoseFile(file_dict[(i, j)])
+
+                Nx, Ny, Nz = full_data.shape
+
+                # full_data.dose *= 2.2861e14 # scale to total treatment time
+                full_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
+
+                full_data.dose /= 5  # normalize to desired dose of 5 Gy
+                full_data.dose *= 100  # express in percent. Should see 100% at x=-2cm
+
+                x_min, x_max = full_data.x_extent
+                y_min, y_max = full_data.y_extent
+                z_min, z_max = full_data.z_extent
+
+                xy_contour = ax.contourf(
+                    linspace(x_min, x_max, Nx), linspace(y_min, y_max, Ny),
+                    # 25 -> slice 5cm above the origin as that is around where the center of the sources are
+                    full_data.dose[Nz // 2 + 25, :, :],
+                    # arange(0, 110, 10),
+                    cmap=cm.Purples
+                )
+                # ax.set_title(label_dict[(i ,j)], fontsize=20)
+
+                xz_contour = ax2.contourf(
+                    linspace(x_min, x_max, Nx), linspace(z_min, z_max, Nz),
+                    full_data.dose[:, Ny // 2, :],
+                    # arange(0, 110, 10),
+                    cmap=cm.Purples
+                )
+                # ax2.set_title(label_dict[(i ,j)], fontsize=20)
+
+    ax.grid(True)
+    ax.xaxis.set_tick_params(labelsize=14)
+    ax.yaxis.set_tick_params(labelsize=14)
+    ax.set_xticks(arange(x_min, x_max + 1, 2))
+    ax.set_yticks(arange(y_min, y_max + 1, 2))
     
-def isodose_plots():
+    ax2.xaxis.set_tick_params(labelsize=14)
+    ax2.yaxis.set_tick_params(labelsize=14)
+    ax2.set_xticks(arange(x_min, x_max + 1, 2))
+    ax2.set_yticks(arange(y_min, y_max + 1, 2))
+    ax2.grid(True)
+
+    fig.text(
+        0.01, 0.51, 'y-axis (cm)',
+        fontsize=27, rotation='vertical', va='center'
+    )
+    fig.text(
+        0.43, 0.03, 'x-axis (cm)', fontsize=27, va='center'
+    )
+    fig.text(
+        0.52, 0.95,
+        'Isodose Contours \n With Volume Correction; ncase = 1E9',
+        fontsize=27, va='center', ha='center'
+    )
+
+    cax = fig.add_axes([0.91, 0.13, 0.01, 0.7])
+    cbar1 = fig.colorbar(
+        xy_contour, cax=cax, orientation='vertical',
+        ax=ax
+    )
+    cbar1.set_label('Percentage Isodose (%)', fontsize=24)
+    cbar1.ax.tick_params(labelsize=14)
+    fig.tight_layout()
+
+    left = 0.1  # the left side of the subplots of the figure
+    right = 0.89    # the right side of the subplots of the figure
+    bottom = 0.09   # the bottom of the subplots of the figure
+    top = 0.90     # the top of the subplots of the figure
+    wspace = 0.2  # the amount of width reserved for blank space between subplots
+    hspace = 0.2  # the amount of height reserved for white space between subplotss
+
+    fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
+
+    fig.savefig(pwd + '/xy_isodose_profile.pdf')
+
+    fig2.text(
+        0.01, 0.51, 'z-axis (cm)',
+        fontsize=27, rotation='vertical', va='center'
+    )
+    fig2.text(
+        0.43, 0.03, 'x-axis (cm)', fontsize=27, va='center'
+    )
+    fig2.text(
+        0.52, 0.95,
+        'Isodose Contours \n With Volume Correction; ncase = 1E9',
+        fontsize=27, va='center', ha='center'
+    )
+    cax2 = fig2.add_axes([0.91, 0.13, 0.01, 0.7])
+    cbar2 = fig2.colorbar(
+        xz_contour, cax=cax2, orientation='vertical',
+        ax=ax
+    )
+    cbar2.set_label('Percentage Isodose (%)', fontsize=24)
+    cbar2.set_clim([0, 100])
+    cbar2.ax.tick_params(labelsize=14)
+
+    fig2.tight_layout()
+
+    left = 0.1  # the left side of the subplots of the figure
+    right = 0.89    # the right side of the subplots of the figure
+    bottom = 0.09   # the bottom of the subplots of the figure
+    top = 0.90     # the top of the subplots of the figure
+    wspace = 0.2  # the amount of width reserved for blank space between subplots
+    hspace = 0.2  # the amount of height reserved for white space between subplotss
+
+    fig2.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
+
+    fig2.savefig(pwd + '/xz_isodose_profile.pdf')
+    
+def isodose_subplots():
     """
     Description:
     Takes any number of .3ddose files and plots a plethora of diagnostic plots 
@@ -525,14 +744,14 @@ def isodose_plots():
     target_dir = '/Users/student/research/results_not_to_git' # for work
 
     file_dict = {
-        (0,0):target_dir + '/mlwa_90.phantom_wo_applicator.3ddose',
-        (0,1):target_dir + '/mlwa_90_2.phantom_wo_applicator.3ddose',
-        (0,2):target_dir + '/mlwa_90_3.phantom_wo_applicator.3ddose',
-        (0,3):target_dir + '/mlwa_90_4.phantom_wo_applicator.3ddose',
-        (1,0):target_dir + '/mlwa_90_5.phantom_wo_applicator.3ddose',
-        (1,1):target_dir + '/mlwa_90_6.phantom_wo_applicator.3ddose',
-        (1,2):target_dir + '/mlwa_90_7.phantom_wo_applicator.3ddose',
-        (1,3):target_dir + '/mlwa_90_8.phantom_wo_applicator.3ddose'
+        (0,0):target_dir + '/mlwa_180.phantom_wo_applicator.3ddose',
+        (0,1):target_dir + '/mlwa_180_2.phantom_wo_applicator.3ddose',
+        (0,2):target_dir + '/mlwa_180_3.phantom_wo_applicator.3ddose',
+        (0,3):target_dir + '/mlwa_180_4.phantom_wo_applicator.3ddose',
+        (1,0):target_dir + '/mlwa_180_5.phantom_wo_applicator.3ddose',
+        (1,1):target_dir + '/mlwa_180_6.phantom_wo_applicator.3ddose',
+        (1,2):target_dir + '/mlwa_180_7.phantom_wo_applicator.3ddose',
+        (1,3):target_dir + '/mlwa_180_8.phantom_wo_applicator.3ddose'
     }
 
     label_dict = {
@@ -566,74 +785,41 @@ def isodose_plots():
             full_data.dose *= 8.2573429808917e13 # scale to maximum individual dwell time
 
             full_data.dose /= 5  # normalize to desired dose of 5 Gy
-            full_data.dose *= 100  # express in percent
+            full_data.dose *= 100  # express in percent. Should see 100% at x=-2cm 
 
             x_min, x_max = full_data.x_extent
             y_min, y_max = full_data.y_extent
             z_min, z_max = full_data.z_extent
 
-            # plot_extent = [x_min, x_max, y_min, y_max]
-
             xy_contour = ax[i,j].contourf(
                 linspace(x_min, x_max, Nx), linspace(y_min, y_max, Ny), 
-                full_data.dose[Nz // 2, :, :],
-                arange(0,110,5),
-                # [1, 5, 10, 15, 30, 60],
+                # 25 -> slice 5cm above the origin as that is around where the center of the sources are in config 2
+                full_data.dose[Nz // 2 + 25, :, :],
+                arange(0,110,10),
                 cmap=cm.Purples
-                # colors='purple'
             )
-            xy_label_contour = ax[i, j].contour(
-                linspace(x_min, x_max, Nx), linspace(z_min, z_max, Nz),
-                full_data.dose[Nz // 2,:, :],
-                # arange(0,4.1,0.1),
-                [5, 10, 20, 100],
-                cmap=cm.jet
-                # colors='black'
-            )
-            ax[i, j].vlines(
-                [-2, 2], -2, 2, linestyles='dashed', lw=2.0, color='darkgreen'
-                )
-            ax[i, j].hlines(
-                [-2, 2], -2, 2, linestyles='dashed', lw=2.0, color='darkgreen'
-                )
-            ax[i,j].clabel(xy_label_contour,inline=1,fontsize=6)
 
             xz_contour = ax2[i, j].contourf(
                 linspace(x_min, x_max, Nx), linspace(z_min, z_max, Nz),
                 full_data.dose[:, Ny // 2, :],
                 arange(0,110,10),
-                # [1, 5, 10, 15, 30, 60],
                 cmap=cm.Purples
-                # colors='purple'
             )
-
-            xz_label_contour = ax2[i, j].contour(
-                linspace(x_min, x_max, Nx), linspace(z_min, z_max, Nz),
-                full_data.dose[:, Ny // 2, :],
-                # arange(0,4.1,0.1),
-                [5, 10, 20, 100],
-                cmap=cm.jet
-                # colors='black'
-            )
-            ax2[i, j].vlines(
-                [-2,2], -10, 10, linestyles='dashed', lw=2.0, color='darkgreen'
-                )
-            ax2[i, j].clabel(xz_label_contour,inline=1,fontsize=6)
 
     for n in xrange(2):
         for m in xrange(4):
             ax[n,m].grid(True)
             ax[n,m].set_title(label_dict[(n,m)],fontsize=14)
-            ax[n,m].xaxis.set_tick_params(labelsize=10)
-            ax[n,m].yaxis.set_tick_params(labelsize=10)
-            # ax[n,m].set_xticks(arange(x_min,x_max,2))
-            ax[n,m].set_yticks(arange(y_min,y_max + 1,5))
+            ax[n,m].xaxis.set_tick_params(labelsize=14)
+            ax[n,m].yaxis.set_tick_params(labelsize=14)
+            ax[n,m].set_xticks(arange(x_min, x_max + 1, 5))
+            ax[n,m].set_yticks(arange(y_min, y_max + 1, 5))
             ax2[n,m].grid(True)
             ax2[n,m].set_title(label_dict[(n,m)],fontsize=14)
-            ax2[n,m].xaxis.set_tick_params(labelsize=10)
-            ax2[n,m].yaxis.set_tick_params(labelsize=10)
-            # ax2[n,m].set_xticks(arange(x_min,x_max,2))
-            ax2[n,m].set_yticks(arange(y_min,y_max + 1,5))
+            ax2[n,m].xaxis.set_tick_params(labelsize=14)
+            ax2[n,m].yaxis.set_tick_params(labelsize=14)
+            ax2[n,m].set_xticks(arange(x_min, x_max + 1, 5))
+            ax2[n,m].set_yticks(arange(y_min, y_max + 1,5))
 
     fig.text(
         0.01, 0.51, 'y-axis (cm)',
@@ -648,15 +834,17 @@ def isodose_plots():
         fontsize=27, va='center', ha='center'
     )
 
-    cax = fig.add_axes([0.95,0.13,0.01,0.7])
-    fig.colorbar(
+    cax = fig.add_axes([0.91,0.13,0.01,0.7])
+    cbar1 = fig.colorbar(
         xy_contour, cax=cax, orientation='vertical',
         ax=ax.ravel().tolist()
-        )
+    )
+    cbar1.set_label('Percentage Isodose (%)',fontsize=24)
+    cbar1.ax.tick_params(labelsize=14)
     fig.tight_layout()
 
     left = 0.1  # the left side of the subplots of the figure
-    right = 0.91    # the right side of the subplots of the figure
+    right = 0.89    # the right side of the subplots of the figure
     bottom = 0.09   # the bottom of the subplots of the figure
     top = 0.87     # the top of the subplots of the figure
     wspace = 0.2  # the amount of width reserved for blank space between subplots
@@ -664,7 +852,7 @@ def isodose_plots():
 
     fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
-    fig.savefig(pwd + '/xy_isodose_profiles.pdf')
+    fig.savefig(pwd + '/xy_isodose_profile_subplots.pdf')
     
     fig2.text(
         0.01, 0.51, 'z-axis (cm)',
@@ -678,13 +866,19 @@ def isodose_plots():
         'Isodose Contours \n With Volume Correction; ncase = 1E9',
         fontsize=27, va='center', ha='center'
     )
-    cax2 = fig2.add_axes([0.95,0.13,0.01,0.7])
-    fig2.colorbar(xz_contour,cax=cax2,orientation='vertical')
+    cax2 = fig2.add_axes([0.91,0.13,0.01,0.7])
+    cbar2 = fig2.colorbar(
+        xz_contour, cax=cax2, orientation='vertical',
+        ax=ax.ravel().tolist()
+        )
+    cbar2.set_label('Percentage Isodose (%)', fontsize=24)
+    cbar2.set_clim([0,100])
+    cbar2.ax.tick_params(labelsize=14)
 
     fig2.tight_layout()
 
     left = 0.1  # the left side of the subplots of the figure
-    right = 0.91    # the right side of the subplots of the figure
+    right = 0.89    # the right side of the subplots of the figure
     bottom = 0.09   # the bottom of the subplots of the figure
     top = 0.87     # the top of the subplots of the figure
     wspace = 0.2  # the amount of width reserved for blank space between subplots
@@ -692,13 +886,14 @@ def isodose_plots():
 
     fig2.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
-    fig2.savefig(pwd + '/xz_isodose_profiles.pdf')
+    fig2.savefig(pwd + '/xz_isodose_profile_subplots.pdf')
 
 if __name__ == "__main__":
     program_name, arguments = argv[0], argv[1:]
 
     # generate_tdvh()
     # dose_position_plots()
-    # rel_dose_position_plots()
-    isodose_plots()
+    # rel_dose_position_plot()
+    isodose_plot()
+    # isodose_subplots()
 
