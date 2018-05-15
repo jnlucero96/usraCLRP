@@ -1,0 +1,140 @@
+##############################################################################
+#
+# Generic MBDCA working group source with generic shielded applicator. This
+# example reads in the volume correction data created by
+# ex_hdr_source_with_applicator_create_volume_correction.egsinp
+# This speeds up initialization when volume correction has to be done 
+# over a large volume.
+#
+##############################################################################
+
+#-------------------------------------------------------------------------------
+:start run control:
+    ncase = 1e7
+:stop run control:
+
+#-------------------------------------------------------------------------------
+:start run mode:
+    run mode = volume correction only
+:stop run mode:
+
+#-------------------------------------------------------------------------------
+:start media definition:
+    AE = 0.512
+    UE = 2.012
+    AP = 0.001
+    UP = 1.500
+    
+    material data file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/media/material.dat    
+:stop media definition:
+
+#-------------------------------------------------------------------------------
+:start geometry definition:
+
+    :start geometry:
+        library = egs_glib
+        name = air_box
+        include file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/geometry/phantoms/50cmx50cmx50cm_box_xyz_water.geom
+    :stop geometry:
+
+    :start geometry:
+        library = egs_glib
+        name = phantom
+        include file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/geometry/phantoms/20cmx20cmx20cm_2mm_xyz_water.geom
+    :stop geometry:
+
+    :start geometry:
+        library = egs_glib
+        name = applicator
+        include file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/geometry/applicators/lymperopoulou/lymperopoulou_applicator.geom
+    :stop geometry:
+
+    :start geometry:
+        library = egs_glib
+        name = seed
+        include file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/geometry/sources/Ir192_HDR/microSelectron-v2/microSelectron-v2.geom
+    :stop geometry:
+
+    :start geometry:
+        name = applicator_with_seed
+        library = egs_genvelope
+        base geometry = applicator
+        inscribed geometries = seed
+    :stop geometry:
+
+    :start geometry:
+        name = phantom_with_applicator
+        library = egs_genvelope
+        base geometry = phantom
+        inscribed geometries = applicator_with_seed
+    :stop geometry:
+
+    :start geometry:
+        name = final
+        library = egs_genvelope
+        base geometry = air_box
+        inscribed geometries = phantom_with_applicator
+    :stop geometry:
+
+    source geometries = seed
+
+    phantom geometries = phantom
+
+    simulation geometry = final
+
+:stop geometry definition:
+
+
+#-------------------------------------------------------------------------------
+:start volume correction:
+
+    :start extra volume correction:
+        correction type = none
+        density of random points (cm^-3) = 1E7
+        include file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/geometry/applicators/lymperopoulou/boundary.shape
+    :stop extra volume correction:
+
+:stop volume correction:
+
+#-------------------------------------------------------------------------------
+:start source definition:
+
+    :start source:
+
+        library = egs_isotropic_source
+        name = microSelectron-v2
+        charge = 0
+        include file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/geometry/sources/Ir192_HDR/microSelectron-v2/microSelectron-v2.shape
+
+        :start spectrum:
+            type = tabulated spectrum
+            spectrum file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/spectra/Ir192_NNDC_2.6_line.spectrum
+        :stop spectrum:
+
+    :stop source:
+
+    :start transformations:
+        include file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/geometry/transformations/lymperopoulou_source_transform
+    :stop transformations:
+
+    source weights = 0.3574131407 0.090127279 0.0540075679 0.0 0.0505675955 0.0866873065 0.3611971104
+
+    simulation source = microSelectron-v2
+
+:stop source definition:
+
+#-------------------------------------------------------------------------------
+:start scoring options:
+
+    muen file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/muen/brachy_xcom_1.5MeV.muendat
+    muen for media = WATER_0.998
+
+    output volume correction files for phantoms = phantom
+    volume correction file format = binary
+
+:stop scoring options:
+
+#-------------------------------------------------------------------------------
+# Transport parameters
+include file = /home/jlucero/EGSnrc/egs_home/egs_brachy/lib/transport/high_energy_default
+
