@@ -17,7 +17,7 @@ from pickle import load, dump
 from py3ddose import DoseFile as read_dose
 
 def plot_D90(
-    patient_number, label, target_dir, d90_list, working_contour, 
+    patient_number, label, target_dir, d90_list, outside_index, working_contour, 
     contour_dose_array, contour_dose_array_full
     ):
 
@@ -61,7 +61,7 @@ def plot_D90(
     str(contour_hist_full[1][d90_index] + " Gy")
 
     fig, ax = subplots(1, 1, figsize=(10,10))
-    contour_hist = ax.hist(
+    ax.hist(
         contour_dose_array, bins=bins, range=dose_range, normed=True, 
         histtype='step', cumulative=-1
     )
@@ -84,10 +84,12 @@ def plot_D90(
         str(patient_number)
         )
 
-    d90_list[i].append(contour_hist_full[1][d90_index])
+    d90_list[outside_index].append(contour_hist_full[1][d90_index])
 
     
-def get_CT(target_dir, patient_number, label, working_contours, no_skip=True):
+def get_CT(
+    target_dir, patient_number, label, working_contours, d90_list, no_skip=True
+    ):
 
     """
     Description: 
@@ -158,10 +160,10 @@ def get_CT(target_dir, patient_number, label, working_contours, no_skip=True):
 
     if no_skip:
 
-        for i, working_contour in enumerate(working_contours):
+        for outside_index, working_contour in enumerate(working_contours):
 
-            cont_dose_array = []
-            cont_dose_array_full = []
+            contour_dose_array = []
+            contour_dose_array_full = []
 
             contmap_file = patient_file_path + working_contour + '_contour.txt'
 
@@ -190,21 +192,24 @@ def get_CT(target_dir, patient_number, label, working_contours, no_skip=True):
 
                             #JNL: not sure what the 499 is for in the check
                             if mc_dose_array[z_index][y_index][x_index] > 499: 
-                                cont_dose_array.append(499.0)
+                                contour_dose_array.append(499.0)
                             else:
-                                cont_dose_array.append(
+                                contour_dose_array.append(
                                     mc_dose_array[z_index][y_index][x_index]
                                 )
                             
-                            cont_dose_array_full.append(
+                            contour_dose_array_full.append(
                                 mc_dose_array[z_index][y_index][x_index]
                             )
 
-            plot_D90() #JNL-TODO: fill in the neccessary arguments
+            plot_D90(
+                patient_number, label, target_dir, d90_list, outside_index, 
+                working_contour, contour_dose_array, contour_dose_array_full
+                )  
         
-        else:
-            for contour_index, working_contour in enumerate(working_contour):
-                d90_list[i].append(0.0)
+    else:
+        for contour_index, working_contour in enumerate(working_contour):
+            d90_list[contour_index].append(0.0)
 
 def main():
 
@@ -228,7 +233,7 @@ def main():
         Please input name of 3DDose files to use :>> 
         """
     )
-    contours = raw_input(
+    working_contours = raw_input(
         """
         Which contour(s)? (Delimit entries by spaces): lung, heart, skin_margin, 
         ptv1, ptv05, ctv, skin_skin, skin_surface, ribs, chest_wall, breast,
@@ -259,7 +264,9 @@ def main():
         print "******* Now working with Patient %s *******" % (patient_index)
         print "*****************************************\n"
     
-        get_CT() #JNL-TODO: Finish inputting the arguments into this function
+        get_CT(
+            target_dir, patient_index, naming_string, working_contours, d90_list
+        ) 
 
     if write_trigger:
         for index, contour in enumerate(working_contours):
