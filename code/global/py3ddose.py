@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env
 # author: Joseph Lucero
 # created on: 3 May 2018 08:23:46
 # purpose: loading 3ddose files for plotting
