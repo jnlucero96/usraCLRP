@@ -38,8 +38,7 @@ class DoseFile(object):
         cur_line = 0
         
         x, y, z = map(int, data[cur_line].split())
-        self.shape = (z, y, x)
-#         self.shape = (x,y,z)
+        self.shape = (x,y,z)
         # print self.shape
         self.size = numpy.multiply.reduce(self.shape)
         
@@ -64,18 +63,22 @@ class DoseFile(object):
             [p[0] for p in positions], numpy.array(self.resolution)/2.
             )
         
-        assert len(self.resolution) == 3, "Non-linear resolution in either x, y or z."
+        assert len(self.resolution) == 3, \
+        "Non-linear resolution in either x, y or z."
         
         dose = []
         while len(dose) < self.size:
             line_data = map(float, data[cur_line].split())
             dose += line_data
             cur_line += 1
-        self.dose = numpy.array(dose)
-        assert len(self.dose) == self.size, "len of dose = {} (expect {})".format(len(self.dose), self.size)
         
-        self.dose = self.dose.reshape((self.shape))
-        assert self.dose.size == self.size, "Dose array size does not match that specified."
+        self.dose = numpy.array(dose)
+        assert len(self.dose) == self.size, \
+        "len of dose = {} (expect {})".format(len(self.dose), self.size)
+        # have dose array be in order (x, y, z)
+        self.dose = self.dose.reshape((self.shape)).transpose()
+        assert self.dose.size == self.size, \
+        "Dose array size does not match that specified."
         
         if load_uncertainty:
             uncertainty = []
@@ -83,11 +86,17 @@ class DoseFile(object):
                 line_data = map(float, data[cur_line].split())
                 uncertainty += line_data
                 cur_line += 1
-            self.uncertainty = numpy.array(uncertainty)
-            assert len(self.uncertainty) == self.size, "len of uncertainty = {} (expected {})".format(len(self.uncertainty), self.size)
-            
-            self.uncertainty = self.uncertainty.reshape((self.shape))
-            assert self.uncertainty.size == self.size, "uncertainty array size does not match that specified."
+            self.uncertainty = numpy.array(uncertainty)  
+            assert len(self.uncertainty) == self.size, \
+            "len of uncertainty = {} (expected {})".format(
+                len(self.uncertainty), self.size
+                )
+            # have uncertainty array be in order (x, y, z)
+            self.uncertainty = self.uncertainty.reshape(
+                (self.shape)
+                ).transpose()
+            assert self.uncertainty.size == self.size, \
+            "uncertainty array size does not match that specified."
             
     def dump(self, file_name):
         numpy.savez(file_name, dose=self.dose, uncertainty=self.uncertainty,

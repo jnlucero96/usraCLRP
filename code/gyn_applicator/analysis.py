@@ -95,8 +95,9 @@ def generate_tdvh_mlwa():
         for index2 in xrange(4):
 
             main_data = DoseFile(file_dict[(index1,index2)])
-            # data_base_flat = main_base_data.dose.flatten() * 2.2861e14 # converts to Gy; norm to treatment time
-            data_flat = main_data.dose.flatten() * 8.2573429808917e13 # converts to Gy; norm to individual max dwell time
+
+            # scale to absolute dose using maximum individual dwell time
+            data_flat = main_data.dose.flatten() * 8.2573429808917e13 
             
             n, bins, __ = ax[index1].hist(
                 data_flat,
@@ -145,8 +146,8 @@ def generate_tdvh_mlwa():
     right = 0.9    # the right side of the subplots of the figure
     bottom = 0.09   # the bottom of the subplots of the figure
     top = 0.88     # the top of the subplots of the figure
-    # wspace = 0.2  # the amount of width reserved for blank space between subplots
-    # hspace = 0.2  # the amount of height reserved for white space between subplotss
+    # wspace = 0.2  # the amount of width for blank space between subplots
+    # hspace = 0.2  # the amount of height for white space between subplotss
 
     fig.subplots_adjust(left=left, top=top, right=right, bottom=bottom)
     fig.savefig(pwd + '/dose_volume_histogram.pdf')
@@ -170,8 +171,8 @@ def generate_tdvh_mlwa():
     right = 0.9    # the right side of the subplots of the figure
     bottom = 0.09   # the bottom of the subplots of the figure
     top = 0.88     # the top of the subplots of the figure
-    # wspace = 0.2  # the amount of width reserved for blank space between subplots
-    # hspace = 0.2  # the amount of height reserved for white space between subplotss
+    # wspace = 0.2  # the amount of width for blank space between subplots
+    # hspace = 0.2  # the amount of height for white space between subplotss
 
     fig2.subplots_adjust(left=left, top=top, right=right, bottom=bottom)
     fig2.savefig(pwd + '/cumulative_dose_volume_histogram.pdf')
@@ -230,7 +231,8 @@ def dose_position_plots():
 
             Nx, Ny, Nz = full_data.shape
 
-            full_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
+            # scale to absolute dose using maximum individual dwell time
+            full_data.dose *= 8.2573429808917e13
 
             x_min, x_max = full_data.x_extent
             y_min, y_max = full_data.y_extent
@@ -241,7 +243,7 @@ def dose_position_plots():
                 if index1 == 0:
                     ax[index1, index2].plot(
                         linspace(x_min, x_max, Nx), 
-                            full_data.dose[Nz // 2, Ny // 2, :],
+                        full_data.dose[:, Ny // 2, Nz // 2],
                         # yerr=full_data.uncertainty[Nz // 2, Ny // 2, :],
                         lw=3.0
                     )
@@ -255,7 +257,7 @@ def dose_position_plots():
                 else:
                     ax[index1, index2].plot(
                         linspace(z_min, z_max, Nz), 
-                        full_data.dose[:, Ny // 2, Nx // 2],
+                        full_data.dose[Nx // 2, Ny // 2, :],
                         # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
                         lw=3.0
                     )
@@ -289,12 +291,14 @@ def dose_position_plots():
         right = 0.95    # the right side of the subplots of the figure
         bottom = 0.09   # the bottom of the subplots of the figure
         top = 0.87     # the top of the subplots of the figure
-        # wspace = 0.2  # the amount of width reserved for blank space between subplots
-        # hspace = 0.2  # the amount of height reserved for white space between subplotss
+        # wspace = 0.2  # the amount of width for blank space between subplots
+        # hspace = 0.2  # the amount of height for white space between subplots
 
         fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
-        fig.savefig(pwd + '/dosage_comparison_' + vox_size_list[fig_index] + '.pdf')
+        fig.savefig(
+            pwd + '/dosage_comparison_' + vox_size_list[fig_index] + '.pdf'
+            )
 
 
 def rel_dose_position_plot():
@@ -313,17 +317,29 @@ def rel_dose_position_plot():
     # target_dir = '/Users/JLucero/MPhysProj/results_not_to_git' for home
     target_dir = '/Users/student/research/results_not_to_git'  # for work
 
+    # unshielded_file = target_dir + \
+    #     '/mlwa_0shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
+
+    # shielded_file_90 =  target_dir + \
+    #     '/mlwa_90shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
+
+    # shielded_file_180 = target_dir + \
+    #     '/mlwa_180shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
+
+    # shielded_file_270 = target_dir + \
+    #     '/mlwa_270shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
+
     unshielded_file = target_dir + \
-        '/mlwa_0shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
+        '/mlwa_0shield_2pt0mm_sim.phantom_wo_applicator.3ddose'
 
     shielded_file_90 =  target_dir + \
-        '/mlwa_90shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
+        '/mlwa_90shield_2pt0mm_sim.phantom_wo_applicator.3ddose'
 
     shielded_file_180 = target_dir + \
-        '/mlwa_180shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
+        '/mlwa_180shield_2pt0mm_sim.phantom_wo_applicator.3ddose'
 
     shielded_file_270 = target_dir + \
-        '/mlwa_270shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
+        '/mlwa_270shield_2pt0mm_sim.phantom_wo_applicator.3ddose'
 
     fig, ax = subplots(
         1, 1, figsize=(10, 10),
@@ -379,18 +395,18 @@ def rel_dose_position_plot():
             len(unshielded_full_data.positions[0][:]) // 2 
             ),
         shield_90_data.dose[
-            z_position_to_index[0.0], 
+            :, 
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         yerr=error_90[
-            z_position_to_index[0.0],
+            :,
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         lw=0.0, label=r'$90^{\circ}$',
-        color='darkgreen', marker='o',
-        markersize=10
+        markeredgecolor='black', marker='o',
+        markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
     ax_twin.errorbar(
         linspace(
@@ -398,18 +414,18 @@ def rel_dose_position_plot():
             len(unshielded_full_data.positions[0][:]) // 2 
             ),
         shield_90_data.dose[
-            z_position_to_index[0.0], 
+            :, 
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         yerr=error_90[
-            z_position_to_index[0.0],
+            :,
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         lw=0.0, label=r'$90^{\circ}$',
-        color='darkgreen', marker='o',
-        markersize=10
+        markeredgecolor='black', marker='o',
+        markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
 
     ax.errorbar(
@@ -418,18 +434,18 @@ def rel_dose_position_plot():
             len(unshielded_full_data.positions[0][:]) // 2 
         ),
         shield_180_data.dose[
-            z_position_to_index[0.0],
+            :,
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         yerr=error_180[
-            z_position_to_index[0.0],
+            :,
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         lw=0.0, label=r'$180^{\circ}$',
-        color='purple', marker='s',
-        markersize=10
+        markeredgecolor='black', marker='s',
+        markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
     ax_twin.errorbar(
         linspace(
@@ -437,18 +453,18 @@ def rel_dose_position_plot():
             len(unshielded_full_data.positions[0][:]) // 2 
         ),
         shield_180_data.dose[
-            z_position_to_index[0.0],
+            :,
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         yerr=error_180[
-            z_position_to_index[0.0],
+            :,
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         lw=0.0, label=r'$180^{\circ}$',
-        color='purple', marker='s',
-        markersize=10
+        markeredgecolor='black', marker='s',
+        markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
 
     ax.errorbar(
@@ -457,18 +473,18 @@ def rel_dose_position_plot():
             len(unshielded_full_data.positions[0][:]) // 2 
         ),
         shield_270_data.dose[
-            z_position_to_index[0.0],
+            :,
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         yerr=error_270[
-            z_position_to_index[0.0],
+            :,
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         lw=0.0, label=r'$270^{\circ}$',
-        color='darkorange', marker='^',
-        markersize=10
+        markeredgecolor='black', marker='^',
+        markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
     ax_twin.errorbar(
         linspace(
@@ -476,18 +492,18 @@ def rel_dose_position_plot():
             len(unshielded_full_data.positions[0][:]) // 2  
         ),
         shield_270_data.dose[
-            z_position_to_index[0.0],
+            :,
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         yerr=error_270[
-            z_position_to_index[0.0],
+            :,
             y_position_to_index[0.0],
-            :
+            z_position_to_index[0.0]
         ][::2],
         lw=0.0, label=r'$270^{\circ}$',
-        color='darkorange', marker='^',
-        markersize=10
+        markeredgecolor='black', marker='^',
+        markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
 
     ax.legend(loc=0, prop={'size': 18})
@@ -496,12 +512,13 @@ def rel_dose_position_plot():
     ax.set_ylim([0.80, 1.05])
     ax.xaxis.set_tick_params(labelsize=17)
     ax.yaxis.set_tick_params(labelsize=17)
+    ax.set_xticks(arange(x_min, x_max + 1, 2))
+
     ax_twin.set_ylim([0.0, 0.5])
+    ax_twin.set_yticks(arange(0.0, 0.5, 0.05))
     ax_twin.yaxis.set_tick_params(labelsize=17)
     ax_twin.vlines([-1.5,1.5],0,1.0)
     ax_twin.fill_between([-1.5, 1.5], 1.05, facecolor='lightgray')
-
-    ax.set_xticks(arange(x_min, x_max + 1, 2))
 
     fig.text(
         0.01, 0.48, 'Relative Dose',
@@ -529,8 +546,8 @@ def rel_dose_position_plot():
     right = 0.9    # the right side of the subplots of the figure
     bottom = 0.09   # the bottom of the subplots of the figure
     top = 0.87     # the top of the subplots of the figure
-    # wspace = 0.2  # the amount of width reserved for blank space between subplots
-    # hspace = 0.2  # the amount of height reserved for white space between subplotss
+    # wspace = 0.2  # the amount of width for blank space between subplots
+    # hspace = 0.2  # the amount of height for white space between subplotss
 
     fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
@@ -565,12 +582,11 @@ def isodose_plot():
     ]
 
     vox_size_list = [
-        '0.5mm',
         '1mm',
         '2mm',
     ]
 
-    for fig_index in xrange(3):
+    for fig_index in xrange(len(vox_size_list)):
 
         fig, ax = subplots(
             2, 2, figsize=(10, 10),
@@ -596,11 +612,12 @@ def isodose_plot():
 
             Nx, Ny, Nz = full_data.shape
 
-            # full_data.dose *= 2.2861e14 # scale to total treatment time
-            full_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
+            # scale to absolute dose using maximum individual dwell time
+            full_data.dose *= 8.2573429808917e13  
 
             full_data.dose /= 5  # normalize to desired dose of 5 Gy
-            full_data.dose *= 100  # express in percent. Should see 100% at x=-2cm
+            # Express results in percent. Should see 100% at x=-2cm
+            full_data.dose *= 100  
 
             x_min, x_max = full_data.x_extent
             y_min, y_max = full_data.y_extent
@@ -608,16 +625,16 @@ def isodose_plot():
 
             xy_contour = ax[ax_x, ax_y].contourf(
                 linspace(x_min, x_max, Nx), linspace(y_min, y_max, Ny),
-                full_data.dose[Nz // 2, :, :],
+                full_data.dose[:, :, Nz // 2].transpose(),
                 arange(0, 110, 10),
-                cmap=get_cmap('Purples')
+                # cmap=get_cmap('Purples')
             )
 
             xz_contour = ax2[ax_x, ax_y].contourf(
                 linspace(x_min, x_max, Nx), linspace(z_min, z_max, Nz),
-                full_data.dose[:, Ny // 2, :],
+                full_data.dose[:, Ny // 2, :].transpose(),
                 arange(0, 110, 10),
-                cmap=get_cmap('Purples')
+                # cmap=get_cmap('Purples')
             )
 
         for n in xrange(2): 
@@ -662,8 +679,8 @@ def isodose_plot():
         right = 0.89    # the right side of the subplots of the figure
         bottom = 0.09   # the bottom of the subplots of the figure
         top = 0.90     # the top of the subplots of the figure
-        # wspace = 0.2  # the amount of width reserved for blank space between subplots
-        # hspace = 0.2  # the amount of height reserved for white space between subplotss
+        # wspace = 0.2  # the amount of width for blank space between subplots
+        # hspace = 0.2  # the amount of height for white space between subplots
 
         fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
@@ -698,8 +715,8 @@ def isodose_plot():
         right = 0.89    # the right side of the subplots of the figure
         bottom = 0.09   # the bottom of the subplots of the figure
         top = 0.90     # the top of the subplots of the figure
-        # wspace = 0.2  # the amount of width reserved for blank space between subplots
-        # hspace = 0.2  # the amount of height reserved for white space between subplotss
+        # wspace = 0.2  # the amount of width for blank space between subplots
+        # hspace = 0.2  # the amount of height for white space between subplots
 
         fig2.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
