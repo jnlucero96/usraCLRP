@@ -38,7 +38,7 @@ class DoseFile(object):
         cur_line = 0
         
         x, y, z = map(int, data[cur_line].split())
-        self.shape = (x,y,z)
+        self.shape = (z,y,x)
         # print self.shape
         self.size = numpy.multiply.reduce(self.shape)
         
