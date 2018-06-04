@@ -8,7 +8,10 @@ from __future__ import division
 from sys import argv, exit
 from os import getcwd
 
-from numpy import linspace, zeros_like, histogram, arange, sqrt, isnan
+from numpy import (
+    linspace, zeros_like, histogram, arange, sqrt, isnan, array, meshgrid
+    )
+from scipy.interpolate import RegularGridInterpolator as RGI
 from py3ddose import DoseFile
 
 from matplotlib.cm import get_cmap
@@ -355,6 +358,55 @@ def rel_dose_position_plot():
     x_min, x_max = unshielded_full_data.x_extent
     z_min, z_max = unshielded_full_data.z_extent
 
+    x_pos = array(unshielded_full_data.positions[0])
+    y_pos = array(unshielded_full_data.positions[1])
+    z_pos = array(unshielded_full_data.positions[2])
+
+    x_pos_mid = (x_pos[1:] + x_pos[:-1]) / 2.0
+    y_pos_mid = (y_pos[1:] + y_pos[:-1]) / 2.0
+    z_pos_mid = (z_pos[1:] + z_pos[:-1]) / 2.0
+
+    unshielded_interpolated_dose = RGI(
+        (x_pos_mid, y_pos_mid, z_pos_mid),
+        unshielded_full_data.dose,
+        bounds_error=False,
+        fill_value=None
+    )
+    shield_90_interpolated_dose = RGI(
+        (x_pos_mid, y_pos_mid, z_pos_mid),
+        shield_90_data.dose,
+        bounds_error=False,
+        fill_value=None
+    )
+    shield_180_interpolated_dose = RGI(
+        (x_pos_mid, y_pos_mid, z_pos_mid),
+        shield_180_data.dose,
+        bounds_error=False,
+        fill_value=None
+    )
+    shield_270_interpolated_dose = RGI(
+        (x_pos_mid, y_pos_mid, z_pos_mid),
+        shield_270_data.dose,
+        bounds_error=False,
+        fill_value=None
+    )
+
+    points = meshgrid(x_pos, y_pos, z_pos)
+    flat = array([m.flatten() for m in points])
+
+    unshielded_interpolated_dose_matrix = unshielded_interpolated_dose(
+        flat.transpose()
+    ).reshape(*points[0].shape).transpose((1, 0, 2))
+    shield_90_interpolated_dose_matrix = shield_90_interpolated_dose(
+        flat.transpose()
+    ).reshape(*points[0].shape).transpose((1, 0, 2))
+    shield_180_interpolated_dose_matrix = shield_180_interpolated_dose(
+        flat.transpose()
+    ).reshape(*points[0].shape).transpose((1, 0, 2))
+    shield_270_interpolated_dose_matrix = shield_270_interpolated_dose(
+        flat.transpose()
+    ).reshape(*points[0].shape).transpose((1, 0, 2))
+
     x_position_to_index = {
         x_position: x_index
         for x_index, x_position in enumerate(unshielded_full_data.positions[0])
@@ -368,141 +420,129 @@ def rel_dose_position_plot():
         for z_index, z_position in enumerate(unshielded_full_data.positions[2])
     }
 
-    error_90 = sqrt(
-        (shield_90_data.uncertainty) ** 2
-        + (unshielded_full_data.uncertainty) ** 2
-    ) 
-    error_180 = sqrt(
-        (shield_180_data.uncertainty) ** 2
-        + (unshielded_full_data.uncertainty) ** 2
-    ) 
-    error_270 = sqrt(
-        (shield_270_data.uncertainty) ** 2
-        + (unshielded_full_data.uncertainty) ** 2
-    ) 
+    # error_90 = sqrt(
+    #     (shield_90_data.uncertainty) ** 2
+    #     + (unshielded_full_data.uncertainty) ** 2
+    # ) 
+    # error_180 = sqrt(
+    #     (shield_180_data.uncertainty) ** 2
+    #     + (unshielded_full_data.uncertainty) ** 2
+    # ) 
+    # error_270 = sqrt(
+    #     (shield_270_data.uncertainty) ** 2
+    #     + (unshielded_full_data.uncertainty) ** 2
+    # ) 
 
-    shield_90_data.dose /= unshielded_full_data.dose
-    shield_180_data.dose /= unshielded_full_data.dose
-    shield_270_data.dose /= unshielded_full_data.dose
+    shield_90_interpolated_dose_matrix /= unshielded_interpolated_dose_matrix
+    shield_180_interpolated_dose_matrix /= unshielded_interpolated_dose_matrix
+    shield_270_interpolated_dose_matrix /= unshielded_interpolated_dose_matrix
 
-    error_90 *= shield_90_data.dose.__abs__()
-    error_180 *= shield_180_data.dose.__abs__()
-    error_270 *= shield_270_data.dose.__abs__()
+    # error_90 *= shield_90_data.dose.__abs__()
+    # error_180 *= shield_180_data.dose.__abs__()
+    # error_270 *= shield_270_data.dose.__abs__()
 
-    ax.errorbar(
-        linspace(
-            x_min, x_max, 
-            len(unshielded_full_data.positions[0][:]) // 2 
-            ),
-        shield_90_data.dose[
+    ax.plot(
+        x_pos[::2],
+        # shield_90_data.dose[
+        shield_90_interpolated_dose_matrix[
             :, 
             y_position_to_index[0.0],
             z_position_to_index[0.0]
         ][::2],
-        yerr=error_90[
-            :,
-            y_position_to_index[0.0],
-            z_position_to_index[0.0]
-        ][::2],
+        # yerr=error_90[
+        #     :,
+        #     y_position_to_index[0.0],
+        #     z_position_to_index[0.0]
+        # ][::2],
         lw=0.0, label=r'$90^{\circ}$',
-        markeredgecolor='black', marker='o',
+        markeredgecolor='darkgreen', marker='o',
         markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
-    ax_twin.errorbar(
-        linspace(
-            x_min, x_max, 
-            len(unshielded_full_data.positions[0][:]) // 2 
-            ),
-        shield_90_data.dose[
+    ax_twin.plot(
+        x_pos[::2],
+        # shield_90_data.dose[
+        shield_90_interpolated_dose_matrix[
             :, 
             y_position_to_index[0.0],
             z_position_to_index[0.0]
         ][::2],
-        yerr=error_90[
-            :,
-            y_position_to_index[0.0],
-            z_position_to_index[0.0]
-        ][::2],
+        # yerr=error_90[
+        #     :,
+        #     y_position_to_index[0.0],
+        #     z_position_to_index[0.0]
+        # ][::2],
         lw=0.0, label=r'$90^{\circ}$',
-        markeredgecolor='black', marker='o',
+        markeredgecolor='darkgreen', marker='o',
         markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
 
-    ax.errorbar(
-        linspace(
-            x_min, x_max,
-            len(unshielded_full_data.positions[0][:]) // 2 
-        ),
-        shield_180_data.dose[
+    ax.plot(
+        x_pos[::2],
+        # shield_180_data.dose[
+        shield_180_interpolated_dose_matrix[
             :,
             y_position_to_index[0.0],
             z_position_to_index[0.0]
         ][::2],
-        yerr=error_180[
-            :,
-            y_position_to_index[0.0],
-            z_position_to_index[0.0]
-        ][::2],
+        # yerr=error_180[
+        #     :,
+        #     y_position_to_index[0.0],
+        #     z_position_to_index[0.0]
+        # ][::2],
         lw=0.0, label=r'$180^{\circ}$',
-        markeredgecolor='black', marker='s',
+        markeredgecolor='purple', marker='s',
         markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
-    ax_twin.errorbar(
-        linspace(
-            x_min, x_max,
-            len(unshielded_full_data.positions[0][:]) // 2 
-        ),
-        shield_180_data.dose[
+    ax_twin.plot(
+        x_pos[::2],
+        # shield_180_data.dose[
+        shield_180_interpolated_dose_matrix[
             :,
             y_position_to_index[0.0],
             z_position_to_index[0.0]
         ][::2],
-        yerr=error_180[
-            :,
-            y_position_to_index[0.0],
-            z_position_to_index[0.0]
-        ][::2],
+        # yerr=error_180[
+        #     :,
+        #     y_position_to_index[0.0],
+        #     z_position_to_index[0.0]
+        # ][::2],
         lw=0.0, label=r'$180^{\circ}$',
-        markeredgecolor='black', marker='s',
+        markeredgecolor='purple', marker='s',
         markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
 
-    ax.errorbar(
-        linspace(
-            x_min, x_max,
-            len(unshielded_full_data.positions[0][:]) // 2 
-        ),
-        shield_270_data.dose[
+    ax.plot(
+        x_pos[::2],
+        # shield_270_data.dose[
+        shield_270_interpolated_dose_matrix[
             :,
             y_position_to_index[0.0],
             z_position_to_index[0.0]
         ][::2],
-        yerr=error_270[
-            :,
-            y_position_to_index[0.0],
-            z_position_to_index[0.0]
-        ][::2],
+        # yerr=error_270[
+        #     :,
+        #     y_position_to_index[0.0],
+        #     z_position_to_index[0.0]
+        # ][::2],
         lw=0.0, label=r'$270^{\circ}$',
-        markeredgecolor='black', marker='^',
+        markeredgecolor='darkorange', marker='^',
         markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
-    ax_twin.errorbar(
-        linspace(
-            x_min, x_max,
-            len(unshielded_full_data.positions[0][:]) // 2  
-        ),
-        shield_270_data.dose[
+    ax_twin.plot(
+        x_pos[::2],
+        # shield_270_data.dose[
+        shield_270_interpolated_dose_matrix[
             :,
             y_position_to_index[0.0],
             z_position_to_index[0.0]
         ][::2],
-        yerr=error_270[
-            :,
-            y_position_to_index[0.0],
-            z_position_to_index[0.0]
-        ][::2],
+        # yerr=error_270[
+        #     :,
+        #     y_position_to_index[0.0],
+        #     z_position_to_index[0.0]
+        # ][::2],
         lw=0.0, label=r'$270^{\circ}$',
-        markeredgecolor='black', marker='^',
+        markeredgecolor='darkorange', marker='^',
         markeredgewidth=1, markersize=10, markerfacecolor='None'
     )
 
@@ -521,16 +561,16 @@ def rel_dose_position_plot():
     ax_twin.fill_between([-1.5, 1.5], 1.05, facecolor='lightgray')
 
     fig.text(
-        0.01, 0.48, 'Relative Dose',
-        fontsize=27, rotation='vertical', va='center'
+        0.02, 0.48, 'Relative Dose',
+        fontsize=27, rotation='vertical', va='center', ha='center'
     )
     fig.text(
-        0.96, 0.51, 'Effective Transmission',
-        fontsize=27, rotation='vertical', va='center'
+        0.985, 0.51, 'Effective Transmission',
+        fontsize=27, rotation='vertical', va='center', ha='center'
     )
     fig.text(
-        0.485, 0.51, 'A p p l i c a t o r',
-        fontsize=35, rotation='vertical', va='center'
+        0.5, 0.51, 'A p p l i c a t o r',
+        fontsize=35, rotation='vertical', va='center', ha='center'
     )
     fig.text(
         0.43, 0.03, 'Position (cm)', fontsize=27, va='center'
@@ -543,7 +583,7 @@ def rel_dose_position_plot():
     fig.tight_layout()
 
     left = 0.11  # the left side of the subplots of the figure
-    right = 0.9    # the right side of the subplots of the figure
+    right = 0.89    # the right side of the subplots of the figure
     bottom = 0.09   # the bottom of the subplots of the figure
     top = 0.87     # the top of the subplots of the figure
     # wspace = 0.2  # the amount of width for blank space between subplots

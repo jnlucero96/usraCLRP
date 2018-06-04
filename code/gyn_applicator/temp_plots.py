@@ -9,6 +9,7 @@ from sys import argv, exit
 from os import getcwd
 
 from numpy import linspace, histogram, arange, meshgrid, array, empty, around
+from scipy.interpolate import RegularGridInterpolator as RGI
 from py3ddose import DoseFile
 
 from matplotlib.cm import get_cmap
@@ -169,14 +170,14 @@ def dose_inv_position_plots():
     target_dir = '/Users/student/research/results_not_to_git'  # for work
 
     file_list = [
-        target_dir +
-        '/mlwa_0shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
-        target_dir +
-        '/mlwa_90shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
-        target_dir +
-        '/mlwa_180shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
-        target_dir +
-        '/mlwa_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        # target_dir +
+        # '/mlwa_0shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        # target_dir +
+        # '/mlwa_90shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        # target_dir +
+        # '/mlwa_180shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        # target_dir +
+        # '/mlwa_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
         # target_dir +
         # '/mlwa_0shield_{0}_sim.phantom_wo_applicator.3ddose',
         # target_dir +
@@ -185,13 +186,17 @@ def dose_inv_position_plots():
         # '/mlwa_180shield_{0}_sim.phantom_wo_applicator.3ddose',
         # target_dir +
         # '/mlwa_270shield_{0}_sim.phantom_wo_applicator.3ddose',
+        target_dir +
+        '/tg43_{0}_sim.phantom_wo_box.3ddose',
+        # target_dir +
+        # '/tg43_applicator_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
     ]
 
     shield_type_lst = [
         'Unshielded',
-        '90 degree shield',
-        '180 degree shield',
-        '270 degree shield'
+        # '90 degree shield',
+        # '180 degree shield',
+        # '270 degree shield'
     ]
 
     vox_size_lst = [
@@ -201,7 +206,7 @@ def dose_inv_position_plots():
     ]
     vox_size_txt_lst = [
         # '0.5mm',
-        '1pt0mm',
+        # '1pt0mm',
         '2pt0mm'
     ]
 
@@ -209,114 +214,6 @@ def dose_inv_position_plots():
         'y-cuts (|x| = {0}, z = {1})',
         'z-cuts (|x| = {0}, y = {1})'
     ]
-
-    # for x_pos in [1.6]:
-    #     for z_pos in around(arange(-2.0, 2.2, 3 * 0.2), 1):
-    #         for fig_index in xrange(len(vox_size_lst)):
-    #             for index2 in xrange(len(shield_type_lst)):  # iterate through shield types
-    #                 fig = figure()
-    #                 gs = GridSpec(ncols=2, nrows=2)
-
-    #                 ax1 = fig.add_subplot(gs[0, 0])
-    #                 ax2 = fig.add_subplot(gs[0, 1])
-    #                 ax3 = fig.add_subplot(gs[0, :])
-
-    #                 ax = [ax1, ax2, ax3]
-
-    #                 full_data = DoseFile(
-    #                     file_list[index2].format(vox_size_txt_lst[fig_index])
-    #                 )
-
-    #                 Nx, Ny, Nz = full_data.shape
-
-    #                 x_position_to_index = {
-    #                     x_position: x_index
-    #                     for x_index, x_position in enumerate(full_data.positions[1])
-    #                 }
-    #                 y_position_to_index = {
-    #                     y_position: y_index
-    #                     for y_index, y_position in enumerate(full_data.positions[1])
-    #                 }
-    #                 z_position_to_index = {
-    #                     z_position: z_index
-    #                     for z_index, z_position in enumerate(full_data.positions[2])
-    #                 }
-
-    #                 # scale to maximum individual dwell time
-    #                 full_data.dose *= 8.2573429808917e13  
-
-    #                 x_min, x_max = full_data.x_extent
-    #                 y_min, y_max = full_data.y_extent
-    #                 z_min, z_max = full_data.z_extent
-
-    #                 # x_pos, y_pos, z_pos = 1.5, 0.0, 0.0
-
-    #                 y_depths = empty(Ny)
-                    
-    #                 for y_depth_index in xrange(Nz):
-    #                     y_depths[y_depth_index] = (
-    #                         full_data.dose.transpose()[
-    #                             x_position_to_index[-x_pos], 
-    #                             y_depth_index, 
-    #                             z_position_to_index[z_pos]
-    #                             ] / full_data.dose.transpose()[
-    #                                 x_position_to_index[x_pos], 
-    #                                 y_depth_index, 
-    #                                 z_position_to_index[z_pos]
-    #                             ]
-    #                         )
-
-    #                 ax[2].plot(
-    #                     linspace(y_min, y_max, Ny), 
-    #                     y_depths,
-    #                     # yerr=full_data.uncertainty[Nz // 2, Ny // 2, :],
-    #                     lw=3.0
-    #                 )
-
-    #                 for m in xrange(len(shield_type_lst)):
-    #                     ax[m].grid(True)
-    #                     ax[m].set_title(shield_type_lst[m], fontsize=20)
-    #                     if m == len(shield_type_lst) - 1:
-    #                         ax[m].set_ylabel(
-    #                             title_list[0].format(x_pos, z_pos),
-    #                             fontsize=20
-    #                         )
-    #                         ax[m].yaxis.set_label_position("right")
-    #                     ax[m].xaxis.set_tick_params(labelsize=14)
-    #                     ax[m].yaxis.set_tick_params(labelsize=14)
-    #                     ax[m].set_xticks(arange(z_min, z_max + 1, 5))
-    #                     ax[m].set_ylim([0.8, 1.10])
-
-    #                 fig.text(
-    #                     0.01, 0.51, 'Ratio at depths',
-    #                     fontsize=27, rotation='vertical', va='center'
-    #                 )
-    #                 fig.text(
-    #                     0.43, 0.03, 'Depth of cut (cm)', fontsize=27, va='center'
-    #                 )
-    #                 fig.text(
-    #                     0.52, 0.95,
-    #                     'Absolute Dose vs. Position \n With Volume Correction; ncase = 1E9',
-    #                     fontsize=27, va='center', ha='center'
-    #                 )
-    #                 fig.tight_layout()
-
-    #                 left = 0.125  # the left side of the subplots of the figure
-    #                 right = 0.95    # the right side of the subplots of the figure
-    #                 bottom = 0.09   # the bottom of the subplots of the figure
-    #                 top = 0.87     # the top of the subplots of the figure
-    #                 # wspace = 0.2  # the amount of width for blank space between subplots
-    #                 # hspace = 0.2  # the amount of height for white space between subplots
-
-    #                 fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
-
-    #                 fig.savefig(
-    #                     pwd + '/dosage_inv_comparison_' + vox_size_lst[fig_index] 
-    #                     + '_x' + str(x_pos) + '_z' + str(z_pos) 
-    #                     + '.pdf'
-    #                 )
-
-    #                 close(fig)
 
     for x_pos in [2.0]:
         # for y_pos in around(arange(-2.0, 2.2, 0.2), 1):
@@ -352,23 +249,14 @@ def dose_inv_position_plots():
                     x_position_to_index = {
                         x_position: x_index
                         for x_index, x_position in enumerate(full_data.positions[0])
-                        # for x_index, x_position in enumerate(around(linspace(x_min, x_max, Nx), 1))
                     }
-                    # for key, value in sorted(x_position_to_index.iteritems(), key=lambda (k, v): (v, k)):
-                    #     print "%s: %s" % (key, value)
-                    # exit(0)
                     y_position_to_index = {
                         y_position: y_index
                         for y_index, y_position in enumerate(full_data.positions[1])
-                        # for y_index, y_position in enumerate(around(linspace(y_min, y_max, Ny), 1))
                     }
-                    # for key, value in sorted(y_position_to_index.iteritems(), key=lambda (k, v): (v, k)):
-                    #     print "%s: %s" % (key, value)
-                    # exit(0)
                     z_position_to_index = {
                         z_position: z_index
                         for z_index, z_position in enumerate(full_data.positions[2])
-                        # for z_index, z_position in enumerate(around(linspace(z_min, z_max, Nz), 1))
                     }
 
                     # scale to maximum individual dwell time
@@ -383,7 +271,7 @@ def dose_inv_position_plots():
                                 y_position_to_index[y_pos],
                                 z_depth_index
                             ] / full_data.dose[
-                                x_position_to_index[-x_pos] - 1, 
+                                x_position_to_index[-x_pos], 
                                 y_position_to_index[y_pos], 
                                 z_depth_index
                             ] 
@@ -393,11 +281,11 @@ def dose_inv_position_plots():
                         linspace(z_min, z_max, Nz), 
                         full_data.dose[
                             x_position_to_index[x_pos],
-                            y_position_to_index[y_pos] - 1,
+                            y_position_to_index[y_pos],
                             :
                         ],
                         # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
-                        lw=3.0
+                        lw=3.0 
                     )
                     ax[0].set_ylabel(
                         r"$D_{\mathrm{shielded}}$ (Gy)", fontsize=17
@@ -406,8 +294,8 @@ def dose_inv_position_plots():
                     ax[1].plot(
                         linspace(z_min, z_max, Nz),
                         full_data.dose[
-                            x_position_to_index[-x_pos] - 1,
-                            y_position_to_index[y_pos] - 1,
+                            x_position_to_index[-x_pos],
+                            y_position_to_index[y_pos],
                             :
                         ],
                         # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
@@ -472,6 +360,247 @@ def dose_inv_position_plots():
                         pwd + '/dosage_inv_comparison_' + vox_size_lst[fig_index] 
                         + '_shield' + str(shield_type_lst[index2])
                         + '_x' + str(x_pos) + '_y' + str(y_pos) + '.pdf'
+                        )
+
+                    close(fig)
+
+def dose_inv_position_interpolate_plots():
+    """
+    Description:
+    Takes any number of .3ddose files and plots a plethora of diagnostic plots 
+    from the data
+
+    Inputs:
+    :name list_file: a list of file names that are to be loaded
+    :type list_file: list
+    """
+
+    pwd = getcwd()
+
+    # target_dir = '/Users/JLucero/MPhysProj/results_not_to_git' for home
+    target_dir = '/Users/student/research/results_not_to_git'  # for work
+
+    file_list = [
+        # target_dir +
+        # '/mlwa_0shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        # target_dir +
+        # '/mlwa_90shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        # target_dir +
+        # '/mlwa_180shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        # target_dir +
+        # '/mlwa_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        # target_dir +
+        # '/mlwa_0shield_{0}_sim.phantom_wo_applicator.3ddose',
+        # target_dir +
+        # '/mlwa_90shield_{0}_sim.phantom_wo_applicator.3ddose',
+        # target_dir +
+        # '/mlwa_180shield_{0}_sim.phantom_wo_applicator.3ddose',
+        # target_dir +
+        # '/mlwa_270shield_{0}_sim.phantom_wo_applicator.3ddose',
+        target_dir +
+        '/tg43_{0}_sim.phantom_wo_box.3ddose',
+        target_dir +
+        '/tg43_applicator_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+    ]
+
+    shield_type_lst = [
+        'Unshielded',
+        '90',
+        # '180',
+        # '270'
+    ]
+
+    vox_size_lst = [
+        # '0.5mm',
+        '1mm',
+        '2mm'
+    ]
+    vox_size_txt_lst = [
+        # '0.5mm',
+        '1pt0mm',
+        '2pt0mm'
+    ]
+
+    title_list = [
+        'y-cuts (|x| = {0}, z = {1})',
+        'z-cuts (|x| = {0}, y = {1})'
+    ]
+
+    for x_pos_desired in [1.6]:
+        # for y_pos in around(arange(-2.0, 2.2, 0.2), 1):
+        for y_pos_desired in [0.0]:
+            for fig_index in xrange(len(vox_size_lst)):
+                for index2 in xrange(len(shield_type_lst)):  # iterate through shield types
+
+                    fig = figure(figsize=(15,10))
+                    minor_locator = MultipleLocator(0.5)
+                    minor_locator2 = MultipleLocator(0.5)
+                    gs = GridSpec(ncols=2, nrows=2)
+
+                    ax1 = fig.add_subplot(gs[0, 0])
+                    ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
+                    ax3 = fig.add_subplot(gs[1, :])
+
+                    ax = [ax1, ax2, ax3]
+
+                    full_data = DoseFile(
+                        file_list[index2].format(vox_size_txt_lst[fig_index])
+                    )
+
+                    # scale to maximum individual dwell time
+                    full_data.dose *= 8.2573429808917e13
+
+                    Nx, Ny, Nz = full_data.shape
+
+                    x_min, x_max = full_data.x_extent
+                    y_min, y_max = full_data.y_extent
+                    z_min, z_max = full_data.z_extent
+
+                    x_position_to_index = {
+                        x_position: x_index
+                        for x_index, x_position 
+                        in enumerate(full_data.positions[0])
+                    }
+                    y_position_to_index = {
+                        y_position: y_index
+                        for y_index, y_position 
+                        in enumerate(full_data.positions[1])
+                    }
+                    z_position_to_index = {
+                        z_position: z_index
+                        for z_index, z_position 
+                        in enumerate(full_data.positions[2])
+                    }
+
+                    x_pos = array(full_data.positions[0])
+                    y_pos = array(full_data.positions[1])
+                    z_pos = array(full_data.positions[2])
+
+                    x_pos_mid = (x_pos[1:] + x_pos[:-1]) / 2.0
+                    y_pos_mid = (y_pos[1:] + y_pos[:-1]) / 2.0
+                    z_pos_mid = (z_pos[1:] + z_pos[:-1]) / 2.0
+
+                    interpolated_dose = RGI(
+                        (x_pos_mid, y_pos_mid, z_pos_mid), 
+                        full_data.dose, 
+                        bounds_error=False, 
+                        fill_value=None
+                    )
+
+                    points = meshgrid(x_pos, y_pos, z_pos)
+                    flat = array([m.flatten() for m in points])
+
+                    interpolated_dose_matrix = interpolated_dose(
+                        flat.transpose()
+                    ).reshape(*points[0].shape).transpose((1, 0, 2))
+                    # something happens during the reshape that messes up the 
+                    # (x, y, z) ordering not quite sure why.
+                    # Need the transpose in order to get proper (x, y, z) 
+                    # ordering
+
+                    z_depths = empty(z_pos.size)
+                    
+                    for z_depth_index in xrange(z_pos.size):
+                        z_depths[z_depth_index] = (
+                            interpolated_dose_matrix[
+                                x_position_to_index[x_pos_desired],
+                                y_position_to_index[y_pos_desired],
+                                z_depth_index
+                            ] / interpolated_dose_matrix[
+                                x_position_to_index[-x_pos_desired], 
+                                y_position_to_index[y_pos_desired], 
+                                z_depth_index
+                            ] 
+                        )
+
+                    ax[0].plot(
+                        z_pos, 
+                        interpolated_dose_matrix[
+                            x_position_to_index[x_pos_desired],
+                            # :,
+                            y_position_to_index[y_pos_desired],
+                            :
+                        ],
+                        # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                        lw=3.0 
+                    )
+                    ax[0].set_ylabel(
+                        r"$D_{\mathrm{shielded}}$ (Gy)", fontsize=17
+                        )
+
+                    ax[1].plot(
+                        z_pos,
+                        # x_pos, y_pos,
+                        interpolated_dose_matrix[
+                            x_position_to_index[-x_pos_desired],
+                            # :,
+                            y_position_to_index[y_pos_desired],
+                            :
+                            # z_position_to_index[0.0]
+                        ],
+                        # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                        lw=3.0
+                    )
+                    ax[1].set_ylabel(
+                        r"$D_{\mathrm{unshielded}}$ (Gy)", fontsize=17
+                        )
+
+                    ax[2].plot(
+                        z_pos, 
+                        z_depths * 100,
+                        # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                        lw=3.0
+                    )
+                    ax[2].set_ylabel(
+                        r"$D_{\mathrm{shielded}}\ /\ D_{\mathrm{unshielded}}$ (%)", 
+                        fontsize = 17
+                        )
+
+                    for m in xrange(3):
+                        ax[m].grid(True, which='both')
+                        # ax[m].set_title(shield_type_lst[m], fontsize=20)
+                        # if m == len(shield_type_lst) - 1:
+                        #     ax[m].set_ylabel(
+                        #         title_list[1].format(x_pos, y_pos),
+                        #         fontsize=20
+                        #     )
+                        #     ax[m].yaxis.set_label_position("right")
+                        ax[m].set_xticks(arange(z_min, z_max + 1, 1))
+                        ax[m].xaxis.set_minor_locator(minor_locator)
+                        if m != 2:
+                            ax[m].yaxis.set_minor_locator(minor_locator2)
+                        ax[m].xaxis.set_tick_params(labelsize=12)
+                        ax[m].yaxis.set_tick_params(labelsize=12)
+
+                    # fig.text(
+                    #     0.01, 0.51, 'Ratio at depths',
+                    #     fontsize=27, rotation='vertical', va='center'
+                    # )
+                    fig.text(
+                        0.55, 0.03, 'Depth of cut (cm)', fontsize=27, va='center',
+                        ha='center'
+                    )
+                    fig.text(
+                        0.52, 0.95,
+                        'Dose Ratios vs. Depth \n With Volume Correction; ncase = 1E9',
+                        fontsize=27, va='center', ha='center'
+                    )
+                    fig.tight_layout()
+
+                    left = 0.09  # the left side of the subplots of the figure
+                    right = 0.97    # the right side of the subplots of the figure
+                    bottom = 0.09   # the bottom of the subplots of the figure
+                    top = 0.87     # the top of the subplots of the figure
+                    # wspace = 0.2  # the amount of width for blank space between subplots
+                    # hspace = 0.2  # the amount of height for white space between subplots
+
+                    fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
+
+                    fig.savefig(
+                        pwd + '/dosage_inv_comparison_' + vox_size_lst[fig_index] 
+                        + '_shield' + str(shield_type_lst[index2])
+                        + '_x' + str(x_pos_desired) + '_y' + str(y_pos_desired) 
+                        + '.pdf'
                         )
 
                     close(fig)
@@ -807,8 +936,13 @@ def inverse_isodose_plot():
             y_min, y_max = full_data.y_extent
             z_min, z_max = full_data.z_extent
 
+            x_pos = array(full_data.positions[0])[1:] + array(full_data.positions[0])[:-1] / 2.0
+            y_pos = array(full_data.positions[1])[1:] + array(full_data.positions[1])[:-1] / 2.0
+            z_pos = array(full_data.positions[2])[1:] + array(full_data.positions[2])[:-1] / 2.0
+
             xy_contour = ax[ax_x, ax_y].contourf(
-                linspace(x_min, x_max, Nx), linspace(y_min, y_max, Ny),
+                # linspace(x_min, x_max, Nx), linspace(y_min, y_max, Ny),
+                x_pos, y_pos,
                 # matplotlib plots column by row (instead of row by column)
                 # so transpose data array to account for this
                 full_data.dose[:, :, z_position_to_index[0.0]].transpose(),
@@ -819,7 +953,8 @@ def inverse_isodose_plot():
             ax[ax_x, ax_y].set_title(shield_type_lst[file_index], fontsize=15)
 
             xz_contour = ax2[ax_x, ax_y].contourf(
-                linspace(x_min, x_max, Nx), linspace(z_min, z_max, Nz),
+                # linspace(x_min, x_max, Nx), linspace(z_min, z_max, Nz),
+                x_pos, z_pos,
                 # matplotlib plots column by row (instead of row by column)
                 # so transpose data array to account for this
                 full_data.dose[:, y_position_to_index[0.0], :].transpose(),
@@ -929,8 +1064,21 @@ def inverse_isodose_plot():
             pwd + '/xz_isodose_profile_' + vox_size_lst[fig_index] + '.pdf'
         )
 
+def get_dose_at_points():
+
+    """
+    Description:
+
+    Inputs:
+
+    Outputs:
+    """
+
+    
+
 if __name__ == "__main__":
     # dose_position_plots()
-    dose_inv_position_plots()
+    # dose_inv_position_plots()
+    dose_inv_position_interpolate_plots()
     # isodose_plot()
     # inverse_isodose_plot()
