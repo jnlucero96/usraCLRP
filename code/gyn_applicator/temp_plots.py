@@ -8,9 +8,11 @@ from __future__ import division
 from sys import argv, exit
 from os import getcwd
 
-from numpy import linspace, histogram, arange, meshgrid, array, empty, around
+from numpy import (
+    linspace, histogram, arange, meshgrid, array, empty, around
+    )
 from scipy.interpolate import RegularGridInterpolator as RGI
-from py3ddose import DoseFile
+from py3ddose import DoseFile, position_to_index
 
 from matplotlib.cm import get_cmap
 from matplotlib.style import use
@@ -20,6 +22,9 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MultipleLocator
 # from mpl_toolkits.mplot3d import Axes3D
 
+
+
+    
 def dose_position_plots():
     """
     Description:
@@ -331,6 +336,7 @@ def dose_inv_position_plots():
                             ax[m].yaxis.set_minor_locator(minor_locator2)
                         ax[m].xaxis.set_tick_params(labelsize=12)
                         ax[m].yaxis.set_tick_params(labelsize=12)
+                        ax[m].set_xlim([-10, 10])
 
                     # fig.text(
                     #     0.01, 0.51, 'Ratio at depths',
@@ -342,7 +348,7 @@ def dose_inv_position_plots():
                     )
                     fig.text(
                         0.52, 0.95,
-                        'Dose Ratios vs. Depth \n With Volume Correction; ncase = 1E9',
+                        'Dose Ratios vs. Depth \n With Volume Correction; ncase = 5E9',
                         fontsize=27, va='center', ha='center'
                     )
                     fig.tight_layout()
@@ -364,7 +370,7 @@ def dose_inv_position_plots():
 
                     close(fig)
 
-def dose_inv_position_interpolate_plots():
+def dose_inv_position_interpolate_plots(interpolation=False):
     """
     Description:
     Takes any number of .3ddose files and plots a plethora of diagnostic plots 
@@ -389,18 +395,18 @@ def dose_inv_position_interpolate_plots():
         # '/mlwa_180shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
         # target_dir +
         # '/mlwa_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
-        # target_dir +
-        # '/mlwa_0shield_{0}_sim.phantom_wo_applicator.3ddose',
-        # target_dir +
-        # '/mlwa_90shield_{0}_sim.phantom_wo_applicator.3ddose',
-        # target_dir +
-        # '/mlwa_180shield_{0}_sim.phantom_wo_applicator.3ddose',
-        # target_dir +
-        # '/mlwa_270shield_{0}_sim.phantom_wo_applicator.3ddose',
         target_dir +
-        '/tg43_{0}_sim.phantom_wo_box.3ddose',
+        '/mlwa_30mmOut_0shield_{0}_sim.phantom_wo_applicator.3ddose',
         target_dir +
-        '/tg43_applicator_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_90shield_{0}_sim.phantom_wo_applicator.3ddose',
+        target_dir +
+        '/mlwa_30mmOut_180shield_{0}_sim.phantom_wo_applicator.3ddose',
+        target_dir +
+        '/mlwa_30mmOut_270shield_{0}_sim.phantom_wo_applicator.3ddose'
+        # target_dir +
+        # '/tg43_{0}_sim.phantom_wo_box.3ddose',
+        # target_dir +
+        # '/tg43_applicator_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
     ]
 
     shield_type_lst = [
@@ -426,7 +432,7 @@ def dose_inv_position_interpolate_plots():
         'z-cuts (|x| = {0}, y = {1})'
     ]
 
-    for x_pos_desired in [1.6]:
+    for x_pos_desired in [1.62]:
         # for y_pos in around(arange(-2.0, 2.2, 0.2), 1):
         for y_pos_desired in [0.0]:
             for fig_index in xrange(len(vox_size_lst)):
@@ -456,22 +462,6 @@ def dose_inv_position_interpolate_plots():
                     y_min, y_max = full_data.y_extent
                     z_min, z_max = full_data.z_extent
 
-                    x_position_to_index = {
-                        x_position: x_index
-                        for x_index, x_position 
-                        in enumerate(full_data.positions[0])
-                    }
-                    y_position_to_index = {
-                        y_position: y_index
-                        for y_index, y_position 
-                        in enumerate(full_data.positions[1])
-                    }
-                    z_position_to_index = {
-                        z_position: z_index
-                        for z_index, z_position 
-                        in enumerate(full_data.positions[2])
-                    }
-
                     x_pos = array(full_data.positions[0])
                     y_pos = array(full_data.positions[1])
                     z_pos = array(full_data.positions[2])
@@ -480,77 +470,133 @@ def dose_inv_position_interpolate_plots():
                     y_pos_mid = (y_pos[1:] + y_pos[:-1]) / 2.0
                     z_pos_mid = (z_pos[1:] + z_pos[:-1]) / 2.0
 
-                    interpolated_dose = RGI(
-                        (x_pos_mid, y_pos_mid, z_pos_mid), 
-                        full_data.dose, 
-                        bounds_error=False, 
-                        fill_value=None
-                    )
+                    if interpolation:
 
-                    points = meshgrid(x_pos, y_pos, z_pos)
-                    flat = array([m.flatten() for m in points])
-
-                    interpolated_dose_matrix = interpolated_dose(
-                        flat.transpose()
-                    ).reshape(*points[0].shape).transpose((1, 0, 2))
-                    # something happens during the reshape that messes up the 
-                    # (x, y, z) ordering not quite sure why.
-                    # Need the transpose in order to get proper (x, y, z) 
-                    # ordering
-
-                    z_depths = empty(z_pos.size)
-                    
-                    for z_depth_index in xrange(z_pos.size):
-                        z_depths[z_depth_index] = (
-                            interpolated_dose_matrix[
-                                x_position_to_index[x_pos_desired],
-                                y_position_to_index[y_pos_desired],
-                                z_depth_index
-                            ] / interpolated_dose_matrix[
-                                x_position_to_index[-x_pos_desired], 
-                                y_position_to_index[y_pos_desired], 
-                                z_depth_index
-                            ] 
+                        interpolated_dose = RGI(
+                            (x_pos_mid, y_pos_mid, z_pos_mid), 
+                            full_data.dose, 
+                            bounds_error=False, 
+                            fill_value=None
                         )
 
-                    ax[0].plot(
-                        z_pos, 
-                        interpolated_dose_matrix[
-                            x_position_to_index[x_pos_desired],
-                            # :,
-                            y_position_to_index[y_pos_desired],
-                            :
-                        ],
-                        # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
-                        lw=3.0 
-                    )
+                        points = meshgrid(x_pos, y_pos, z_pos)
+                        flat = array([m.flatten() for m in points])
+
+                        # something happens during the reshape that messes up the
+                        # (x, y, z) ordering not quite sure why.
+                        # Need the transpose in order to get proper (x, y, z)
+                        # ordering
+                        dose_matrix = interpolated_dose(
+                            flat.transpose()
+                        ).reshape(*points[0].shape).transpose((1, 0, 2))
+
+                        z_depths = empty(z_pos.size)
+
+                        for z_depth_index in xrange(z_pos.size):
+                            z_depths[z_depth_index] = (
+                                dose_matrix[
+                                    position_to_index(
+                                        x_pos_desired, x_pos),
+                                    position_to_index(
+                                        y_pos_desired, y_pos),
+                                    z_depth_index
+                                ] / dose_matrix[
+                                    position_to_index(-x_pos_desired,
+                                                      x_pos),
+                                    position_to_index(
+                                        y_pos_desired, y_pos),
+                                    z_depth_index
+                                ]
+                            )
+
+                        ax[0].plot(
+                            z_pos,
+                            dose_matrix[
+                                position_to_index(x_pos_desired, x_pos),
+                                # :,
+                                position_to_index(y_pos_desired, y_pos),
+                                :
+                            ],
+                            # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                            lw=3.0
+                        )
+                        ax[1].plot(
+                            z_pos,
+                            # x_pos, y_pos,
+                            dose_matrix[
+                                position_to_index(-x_pos_desired, x_pos),
+                                # :,
+                                position_to_index(y_pos_desired, y_pos),
+                                :
+                                # z_position_to_index[0.0]
+                            ],
+                            # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                            lw=3.0
+                        )
+                        ax[2].plot(
+                            z_pos,
+                            z_depths * 100,
+                            # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                            lw=3.0
+                        )
+
+                    else: 
+                    
+                        dose_matrix = full_data.dose
+
+                        z_depths = empty(z_pos_mid.size)
+                        
+                        for z_depth_index in xrange(z_pos_mid.size):
+                            z_depths[z_depth_index] = (
+                                dose_matrix[
+                                    position_to_index(x_pos_desired,x_pos_mid),
+                                    position_to_index(y_pos_desired,y_pos_mid),
+                                    z_depth_index
+                                ] / dose_matrix[
+                                    position_to_index(-x_pos_desired,x_pos_mid), 
+                                    position_to_index(y_pos_desired,y_pos_mid), 
+                                    z_depth_index
+                                ] 
+                            )
+                        ax[0].plot(
+                            z_pos_mid,
+                            dose_matrix[
+                                position_to_index(x_pos_desired, x_pos_mid),
+                                # :,
+                                position_to_index(y_pos_desired, y_pos_mid),
+                                :
+                            ],
+                            # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                            lw=3.0
+                        )
+                        ax[1].plot(
+                            z_pos_mid,
+                            # x_pos, y_pos,
+                            dose_matrix[
+                                position_to_index(-x_pos_desired, x_pos_mid),
+                                # :,
+                                position_to_index(y_pos_desired, y_pos_mid),
+                                :
+                                # z_position_to_index[0.0]
+                            ],
+                            # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                            lw=3.0
+                        )
+                        ax[2].plot(
+                            z_pos_mid,
+                            z_depths * 100,
+                            # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                            lw=3.0
+                        )
+
+                    
+
                     ax[0].set_ylabel(
                         r"$D_{\mathrm{shielded}}$ (Gy)", fontsize=17
                         )
-
-                    ax[1].plot(
-                        z_pos,
-                        # x_pos, y_pos,
-                        interpolated_dose_matrix[
-                            x_position_to_index[-x_pos_desired],
-                            # :,
-                            y_position_to_index[y_pos_desired],
-                            :
-                            # z_position_to_index[0.0]
-                        ],
-                        # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
-                        lw=3.0
-                    )
                     ax[1].set_ylabel(
                         r"$D_{\mathrm{unshielded}}$ (Gy)", fontsize=17
                         )
-
-                    ax[2].plot(
-                        z_pos, 
-                        z_depths * 100,
-                        # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
-                        lw=3.0
-                    )
                     ax[2].set_ylabel(
                         r"$D_{\mathrm{shielded}}\ /\ D_{\mathrm{unshielded}}$ (%)", 
                         fontsize = 17
@@ -558,19 +604,13 @@ def dose_inv_position_interpolate_plots():
 
                     for m in xrange(3):
                         ax[m].grid(True, which='both')
-                        # ax[m].set_title(shield_type_lst[m], fontsize=20)
-                        # if m == len(shield_type_lst) - 1:
-                        #     ax[m].set_ylabel(
-                        #         title_list[1].format(x_pos, y_pos),
-                        #         fontsize=20
-                        #     )
-                        #     ax[m].yaxis.set_label_position("right")
                         ax[m].set_xticks(arange(z_min, z_max + 1, 1))
                         ax[m].xaxis.set_minor_locator(minor_locator)
                         if m != 2:
                             ax[m].yaxis.set_minor_locator(minor_locator2)
                         ax[m].xaxis.set_tick_params(labelsize=12)
                         ax[m].yaxis.set_tick_params(labelsize=12)
+                        ax[m].set_xlim([-10,10])
 
                     # fig.text(
                     #     0.01, 0.51, 'Ratio at depths',
@@ -623,13 +663,13 @@ def isodose_plot():
 
     file_list = [
         target_dir +
-        '/mlwa_0shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_0shield_{0}_sim.phantom_wo_applicator.3ddose',
         target_dir +
-        '/mlwa_90shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_90shield_{0}_sim.phantom_wo_applicator.3ddose',
         target_dir +
-        '/mlwa_180shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_180shield_{0}_sim.phantom_wo_applicator.3ddose',
         target_dir +
-        '/mlwa_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose'
+        '/mlwa_30mmOut_270shield_{0}_sim.phantom_wo_applicator.3ddose'
         # target_dir +
         # '/mlwa_0shield_{0}_sim.phantom_wo_applicator.3ddose',
         # target_dir +
@@ -681,6 +721,14 @@ def isodose_plot():
                 for index, position in enumerate(full_data.positions[2])
             }
 
+            x_pos = array(full_data.positions[0])
+            y_pos = array(full_data.positions[1])
+            z_pos = array(full_data.positions[2])
+
+            x_pos_mid = ((x_pos[1:]) + (x_pos[:-1])) / 2.0
+            y_pos_mid = ((y_pos[1:]) + (y_pos[:-1])) / 2.0
+            z_pos_mid = ((z_pos[1:]) + (z_pos[:-1])) / 2.0
+
             if file_index == 0:
                 ax_x, ax_y = 0, 0
             elif file_index == 1:
@@ -702,19 +750,19 @@ def isodose_plot():
             z_min, z_max = full_data.z_extent
 
             xy_contour = ax[ax_x, ax_y].contourf(
-                linspace(x_min, x_max, Nx), linspace(y_min, y_max, Ny),
+                x_pos_mid, y_pos_mid, 
                 # matplotlib plots column by row (instead of row by column)
                 # so transpose data array to account for this
-                full_data.dose[:, :, z_position_to_index[0.0]].transpose(),
+                full_data.dose[:, :, position_to_index(0.0, z_pos)].transpose(),
                 arange(0, 110, 10),
                 # [5, 10, 20, 50, 100],
                 # cmap=get_cmap('gnuplot')
             )
             ax[ax_x, ax_y].contour(
-                linspace(x_min, x_max, Nx), linspace(y_min, y_max, Ny),
+                x_pos_mid, y_pos_mid,
                 # matplotlib plots column by row (instead of row by column)
                 # so transpose data array to account for this
-                full_data.dose[:, :, z_position_to_index[0.0]].transpose(),
+                full_data.dose[:, :, position_to_index(0.0, z_pos)].transpose(),
                 # arange(0, 110, 10),
                 [5, 10, 20, 50, 100],
                 cmap=get_cmap('RdPu')
@@ -722,19 +770,19 @@ def isodose_plot():
             ax[ax_x, ax_y].set_title(shield_type_lst[file_index], fontsize=15)
 
             xz_contour = ax2[ax_x, ax_y].contourf(
-                linspace(x_min, x_max, Nx), linspace(z_min, z_max, Nz),
+                x_pos_mid, z_pos_mid,
                 # matplotlib plots column by row (instead of row by column)
                 # so transpose data array to account for this
-                full_data.dose[:, y_position_to_index[0.0], :].transpose(),
+                full_data.dose[:, position_to_index(0.0, y_pos), :].transpose(),
                 arange(0, 110, 10),
                 # [5, 10, 20, 50, 100],
                 # cmap=get_cmap('gnuplot')
             )
             ax2[ax_x, ax_y].contour(
-                linspace(x_min, x_max, Nx), linspace(y_min, y_max, Ny),
+                x_pos_mid, y_pos_mid,
                 # matplotlib plots column by row (instead of row by column)
                 # so transpose data array to account for this
-                full_data.dose[:, y_position_to_index[0.0], :].transpose(),
+                full_data.dose[:, position_to_index(0.0, y_pos), :].transpose(),
                 # arange(0, 110, 10),
                 [5, 10, 20, 50, 100], 
                 cmap=get_cmap('RdPu')
@@ -752,14 +800,15 @@ def isodose_plot():
                     labelsize=14, right=True, direction='in'
                     )
                 ax[n, m].set_xticks(arange(x_min, x_max + 1, 2))
+                ax[n, m].set_xlim([x_min,x_max])
                 ax[n, m].set_yticks(arange(y_min, y_max + 1, 2))
-            
-                ax[n, m].vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
-                ax[n, m].hlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
-                ax[n, m].vlines([0], -10, 10, linestyles='dashed',
-                                lw=2.0, color='darkgoldenrod')
-                ax[n, m].hlines([0], -10, 10, linestyles='dashed',
-                                lw=2.0, color='darkgoldenrod')
+                ax[n, m].set_ylim([y_min, y_max])
+                # ax[n, m].vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+                # ax[n, m].hlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+                # ax[n, m].vlines([0], -10, 10, linestyles='dashed',
+                #                 lw=2.0, color='darkgoldenrod')
+                # ax[n, m].hlines([0], -10, 10, linestyles='dashed',
+                #                 lw=2.0, color='darkgoldenrod')
 
                 # ax2[n, m].grid(True)
                 ax2[n, m].xaxis.set_tick_params(
@@ -769,12 +818,14 @@ def isodose_plot():
                     labelsize=14, right=True, direction='in'
                     )
                 ax2[n, m].set_xticks(arange(x_min, x_max + 1, 2))
+                ax2[n, m].set_xlim([x_min, x_max])
                 ax2[n, m].set_yticks(arange(y_min, y_max + 1, 2))
+                ax2[n, m].set_ylim([y_min, y_max])
 
-                ax2[n, m].vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
-                ax2[n, m].vlines([0], -10, 10, linestyles='dashed', lw=2.0, color='darkgoldenrod')
-                ax2[n, m].hlines([0], -10, 10, linestyles='dashed',
-                                 lw=2.0, color='darkgoldenrod')
+                # ax2[n, m].vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+                # ax2[n, m].vlines([0], -10, 10, linestyles='dashed', lw=2.0, color='darkgoldenrod')
+                # ax2[n, m].hlines([0], -10, 10, linestyles='dashed',
+                #                  lw=2.0, color='darkgoldenrod')
                 
 
         fig.text(
@@ -866,13 +917,13 @@ def inverse_isodose_plot():
 
     file_list = [
         target_dir +
-        '/mlwa_0shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_0shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
         target_dir +
-        '/mlwa_90shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_90shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
         target_dir +
-        '/mlwa_180shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_180shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
         target_dir +
-        '/mlwa_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
     ]
 
     shield_type_lst = [
