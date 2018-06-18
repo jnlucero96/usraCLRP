@@ -5,9 +5,29 @@
 
 from __future__ import division
 
+from numpy import where, logical_and
+
 from gzip import open as gOpen
 
 import numpy
+
+
+def position_to_index(p, A):
+    """
+    Description:
+    Checks entire position array A until it finds the 
+    Inputs:
+
+    Outputs:
+    """
+    if p <= 0:
+        return where(
+            logical_and(p >= A[:-1], p < A[1:])
+        )[0][0] + 1
+    else:
+        return where(
+            logical_and(p >= A[:-1], p < A[1:])
+        )[0][0]
 
 class DoseFile(object):
 
