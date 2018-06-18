@@ -5,6 +5,8 @@
 
 from __future__ import division
 
+from gzip import open as gOpen
+
 import numpy
 
 class DoseFile(object):
@@ -33,7 +35,11 @@ class DoseFile(object):
         self.size = self.dose.size
     
     def _load_3ddose(self, file_name, load_uncertainty=False):
-        data = file(file_name).read().split('\n')
+        if file_name[-3:] == '.gz':
+            with gOpen(file_name, 'rb') as data_file:
+                data = data_file.read().split('\n')
+        else:
+            data = file(file_name).read().split('\n')
         
         cur_line = 0
         
