@@ -9,13 +9,21 @@ from sys import argv, exit
 from os import getcwd
 
 
-from numpy import linspace, zeros_like, histogram, arange 
-from py3ddose import DoseFile
+from numpy import linspace, zeros_like, histogram, arange, array
+from py3ddose import DoseFile, position_to_index
 
 from matplotlib.cm import get_cmap
 from matplotlib.style import use
 use('seaborn-paper')
 from matplotlib.pyplot import subplots
+
+def calc_per_diff(A,B):
+
+    numerator = (A - B).__abs__()
+    denominator = 0.5 * (A + B)
+    as_percent = (numerator / denominator) * 100
+
+    return as_percent
 
 def generate_tdvh_tg43():
 
@@ -293,78 +301,112 @@ def isodose_plot():
     # file_name_template = target_dir + \
     #     '/tg43_applicator_{0}_sim.phantom_wo_applicator_wo_box.3ddose'
     file_name_template = target_dir + \
-        '/tg43_{0}_sim.phantom_wo_box.3ddose'
+        '/tg43_{0}_{1}.phantom_wo_box.3ddose'
 
     vox_size_list = [
         # '0.5mm',
-        '1mm',
+        # '1mm',
         '2mm'
     ]
     vox_size_txt_list = [
         # '0.5mm',
-        '1pt0mm',
-        '2pt0mm'
+        # '1pt0mm',
+        # '2pt0mm'
+        '2mm'
+    ]
+
+    sources = [
+        'Flexisource',
+        'microSelectronV1',
+        'microSelectronV2'
     ]
 
     fig, ax = subplots(
-        1, 2, figsize=(15, 10),
+        1, 1, figsize=(10, 10),
         sharex='all', sharey='all'
     )
     fig2, ax2 = subplots(
-        1, 2, figsize=(15, 10),
+        1, 1, figsize=(10, 10),
         sharex='all', sharey='all'
     )
 
-    for file_index in xrange(len(vox_size_list)):
+    # source = 'V2-FlexiCompare'
+    # source = 'V1-FlexiCompare'
+    source = 'V2-V1Compare'
+    # sup_title = 'Flexisource to microSelectron-v2\n Dose Comparison'
+    # sup_title = 'Flexisource to microSelectron-v1\n Dose Comparison'
+    sup_title = 'microSelectron-v1 to microSelectron-v2\n Dose Comparison'
 
-        full_data = DoseFile(file_name_template.format(vox_size_txt_list[file_index]))
-
-        Nx, Ny, Nz = full_data.shape
-
-        # full_data.dose *= 2.2861e14 # scale to total treatment time
-        full_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
-
-        full_data.dose /= 5  # normalize to desired dose of 5 Gy
-        full_data.dose *= 100  # express in percent. Should see 100% at x=-2cm
-
-        x_min, x_max = full_data.x_extent
-        y_min, y_max = full_data.y_extent
-        z_min, z_max = full_data.z_extent
-
-        xy_contour = ax[file_index].contour(
-            linspace(x_min, x_max, Nx), linspace(y_min, y_max, Ny),
-            full_data.dose[Nz // 2, :, :],
-            # arange(0, 110, 10),
-            [5, 10, 20, 50, 100]
-            # cmap=get_cmap('Purples')
+    mSV2_data = DoseFile(
+        target_dir + '/tg43_microSelectronV2_2mm.phantom_wo_box.3ddose'
+    )
+    mSV1_data = DoseFile(
+        target_dir + '/tg43_microSelectronV1_2mm.phantom_wo_box.3ddose'
         )
-        ax[file_index].set_title(vox_size_list[file_index],fontsize=14)
-
-        xz_contour = ax2[file_index].contour(
-            linspace(x_min, x_max, Nx), linspace(z_min, z_max, Nz),
-            full_data.dose[:, Ny // 2, :],
-            # arange(0, 110, 10),
-            [5, 10, 20, 50, 100]
-            # cmap=get_cmap('Purples')
+    flexi_data = DoseFile(
+        target_dir + '/tg43_Flexisource_2mm.phantom_wo_box.3ddose'
         )
-        ax2[file_index].set_title(vox_size_list[file_index], fontsize=14)
 
-    for n in xrange(len(vox_size_list)): 
+    comparison_matrix = calc_per_diff(mSV2_data.dose, mSV1_data.dose)
+    
+    Nx, Ny, Nz = mSV2_data.shape
 
-        ax[n].grid(True)
-        ax[n].xaxis.set_tick_params(labelsize=14)
-        ax[n].yaxis.set_tick_params(labelsize=14)
-        ax[n].set_xticks(arange(x_min, x_max + 1))
-        ax[n].set_yticks(arange(y_min, y_max + 1))
-        ax[n].vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
-        ax[n].hlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+    # mSV2_data.dose *= 2.2861e14 # scale to total treatment time
+    # mSV2_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
+    # mSV1_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
+    # flexi_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
 
-        ax2[n].xaxis.set_tick_params(labelsize=14)
-        ax2[n].yaxis.set_tick_params(labelsize=14)
-        ax2[n].set_xticks(arange(x_min, x_max + 1))
-        ax2[n].set_yticks(arange(y_min, y_max + 1))
-        ax2[n].vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
-        ax2[n].grid(True)
+    # mSV2_data.dose /= 5  # normalize to desired dose of 5 Gy
+    # mSV2_data.dose *= 100  # express in percent. Should see 100% at x=-2cm
+
+    x_min, x_max = mSV2_data.x_extent
+    y_min, y_max = mSV2_data.y_extent
+    z_min, z_max = mSV2_data.z_extent
+
+    x_pos = array(mSV2_data.positions[0])
+    y_pos = array(mSV2_data.positions[1])
+    z_pos = array(mSV2_data.positions[2])
+
+    x_pos_mid = (x_pos[1:] + x_pos[:-1]) / 2.0
+    y_pos_mid = (y_pos[1:] + y_pos[:-1]) / 2.0
+    z_pos_mid = (z_pos[1:] + z_pos[:-1]) / 2.0
+
+    xy_contour = ax.contourf(
+        x_pos_mid, y_pos_mid, 
+        comparison_matrix[:,:,position_to_index(0.0,z_pos_mid)].transpose(),
+        # arange(0, 110, 10),
+        # [5, 10, 20, 50, 100]
+        # cmap=get_cmap('Purples')
+    )
+    # ax.set_title(vox_size_list,fontsize=14)
+
+    xz_contour = ax2.contourf(
+        x_pos_mid, z_pos_mid, 
+        comparison_matrix[:, position_to_index(0.0, y_pos_mid), :].transpose(),
+        # arange(0, 110, 10),
+        # [5, 10, 20, 50, 100]
+        # cmap=get_cmap('Purples')
+    )
+    # ax2.set_title(vox_size_list, fontsize=14)
+
+    # ax.grid(True)
+    ax.xaxis.set_tick_params(labelsize=14)
+    ax.yaxis.set_tick_params(labelsize=14)
+    ax.set_xticks(arange(-10, 10 + 1, 2))
+    ax.set_xlim([-10, 10])
+    ax.set_yticks(arange(-10, 10 + 1, 2))
+    ax.set_ylim([-10, 10])
+    # ax.vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+    # ax.hlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+
+    # ax2.grid(True)
+    ax2.xaxis.set_tick_params(labelsize=14)
+    ax2.yaxis.set_tick_params(labelsize=14)
+    ax2.set_xticks(arange(-10, 10 + 1, 2))
+    ax2.set_xlim([-10, 10])
+    ax2.set_yticks(arange(-10, 10 + 1, 2))
+    ax2.set_ylim([-10, 10])
+    # ax2.vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
 
     fig.text(
         0.01, 0.51, 'y-axis (cm)',
@@ -375,7 +417,7 @@ def isodose_plot():
     )
     fig.text(
         0.52, 0.95,
-        'Isodose Contours \n With Volume Correction; ncase = 5E9',
+        sup_title,
         fontsize=27, va='center', ha='center'
     )
 
@@ -384,7 +426,7 @@ def isodose_plot():
         xy_contour, cax=cax, orientation='vertical',
         ax=ax
     )
-    cbar1.set_label('Percentage Isodose (%)', fontsize=24)
+    cbar1.set_label('Percentage Difference (%)', fontsize=24)
     cbar1.ax.tick_params(labelsize=14)
     fig.tight_layout()
 
@@ -398,7 +440,7 @@ def isodose_plot():
     fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
     fig.savefig(
-        pwd + '/tg43_xy_isodose_profile_subplots.pdf'
+        pwd + '/tg43_' + source +'_xy_isodose_profile_subplots.pdf'
         )
 
     fig2.text(
@@ -410,22 +452,22 @@ def isodose_plot():
     )
     fig2.text(
         0.52, 0.95,
-        'Isodose Contours \n With Volume Correction; ncase = 5E9',
+        sup_title,
         fontsize=27, va='center', ha='center'
     )
-    cax2 = fig2.add_axes([0.91, 0.13, 0.01, 0.7])
+    cax2 = fig2.add_axes([0.90, 0.13, 0.01, 0.7])
     cbar2 = fig2.colorbar(
         xz_contour, cax=cax2, orientation='vertical',
-        ax=ax
+        ax=ax2
     )
-    cbar2.set_label('Percentage Isodose (%)', fontsize=24)
-    cbar2.set_clim([0, 100])
+    cbar2.set_label('Percentage Difference (%)', fontsize=24)
+    # cbar2.set_clim([0, 100])
     cbar2.ax.tick_params(labelsize=14)
 
     fig2.tight_layout()
 
     left = 0.1  # the left side of the subplots of the figure
-    right = 0.89    # the right side of the subplots of the figure
+    right = 0.888    # the right side of the subplots of the figure
     bottom = 0.09   # the bottom of the subplots of the figure
     top = 0.88     # the top of the subplots of the figure
     # wspace = 0.2  # the amount of width reserved for blank space between subplots
@@ -434,7 +476,7 @@ def isodose_plot():
     fig2.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
     fig2.savefig(
-        pwd + '/tg43_xz_isodose_profile_subplots.pdf'
+        pwd + '/tg43_' + source + '_xz_isodose_profile_subplots.pdf'
         )
     
 if __name__ == "__main__":

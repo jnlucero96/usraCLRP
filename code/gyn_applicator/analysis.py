@@ -16,7 +16,7 @@ from py3ddose import DoseFile, position_to_index
 
 from matplotlib.cm import get_cmap
 from matplotlib.style import use
-use('seaborn-paper')
+use('ggplot')
 from matplotlib.pyplot import subplots
 
 def generate_tdvh_mlwa():
@@ -333,21 +333,20 @@ def rel_dose_position_plot():
     #     '/mlwa_270shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
 
     unshielded_file = target_dir + \
-        '/mlwa_30mmOut_0shield_2pt0mm_sim.phantom_wo_applicator.3ddose'
+        '/mlwa_30mmOut_0shield_2pt0mm_sim.phantom_wo_applicator.3ddose.gz'
 
     shielded_file_90 =  target_dir + \
-        '/mlwa_30mmOut_90shield_2pt0mm_sim.phantom_wo_applicator.3ddose'
+        '/mlwa_30mmOut_90shield_2pt0mm_sim.phantom_wo_applicator.3ddose.gz'
 
     shielded_file_180 = target_dir + \
-        '/mlwa_30mmOut_180shield_2pt0mm_sim.phantom_wo_applicator.3ddose'
+        '/mlwa_30mmOut_180shield_2pt0mm_sim.phantom_wo_applicator.3ddose.gz'
 
     shielded_file_270 = target_dir + \
-        '/mlwa_30mmOut_270shield_2pt0mm_sim.phantom_wo_applicator.3ddose'
+        '/mlwa_30mmOut_270shield_2pt0mm_sim.phantom_wo_applicator.3ddose.gz'
 
     fig, ax = subplots(
-        1, 1, figsize=(10, 10),
-        sharex='col'
-    )
+        1, 1, figsize=(10, 10)
+        )
     ax_twin = ax.twinx()
 
     unshielded_full_data = DoseFile(unshielded_file,load_uncertainty=True)
@@ -459,9 +458,10 @@ def rel_dose_position_plot():
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
         ][::2],
-        lw=0.0, label=r'$90^{\circ}$',
+        lw=0.0, label=r'$90^{\circ}$', color='darkgreen',
         markeredgecolor='darkgreen', marker='o',
-        markeredgewidth=1, markersize=10, markerfacecolor='None'
+        markeredgewidth=1, markersize=10, markerfacecolor='None',
+        elinewidth=1.5, capsize=1.5
     )
     ax_twin.errorbar(
         x_pos_mid[::2],
@@ -476,9 +476,10 @@ def rel_dose_position_plot():
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
         ][::2],
-        lw=0.0, label=r'$90^{\circ}$',
+        lw=0.0, label=r'$90^{\circ}$', color='darkgreen',
         markeredgecolor='darkgreen', marker='o',
-        markeredgewidth=1, markersize=10, markerfacecolor='None'
+        markeredgewidth=1, markersize=10, markerfacecolor='None',
+        elinewidth=1.5, capsize=1.5
     )
 
     ax.errorbar(
@@ -494,9 +495,10 @@ def rel_dose_position_plot():
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
         ][::2],
-        lw=0.0, label=r'$180^{\circ}$',
+        lw=0.0, label=r'$180^{\circ}$', color='purple',
         markeredgecolor='purple', marker='s',
-        markeredgewidth=1, markersize=10, markerfacecolor='None'
+        markeredgewidth=1, markersize=10, markerfacecolor='None',
+        elinewidth=1.5, capsize=1.5
     )
     ax_twin.errorbar(
         x_pos_mid[::2],
@@ -511,9 +513,10 @@ def rel_dose_position_plot():
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
         ][::2],
-        lw=0.0, label=r'$180^{\circ}$',
+        lw=0.0, label=r'$180^{\circ}$', color='purple',
         markeredgecolor='purple', marker='s',
-        markeredgewidth=1, markersize=10, markerfacecolor='None'
+        markeredgewidth=1, markersize=10, markerfacecolor='None',
+        elinewidth=1.5, capsize=1.5
     )
 
     ax.errorbar(
@@ -529,9 +532,10 @@ def rel_dose_position_plot():
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
         ][::2],
-        lw=0.0, label=r'$270^{\circ}$',
+        lw=0.0, label=r'$270^{\circ}$', color='darkorange',
         markeredgecolor='darkorange', marker='^',
-        markeredgewidth=1, markersize=10, markerfacecolor='None'
+        markeredgewidth=1, markersize=10, markerfacecolor='None',
+        elinewidth=1.5, capsize=1.5
     )
     ax_twin.errorbar(
         x_pos_mid[::2],
@@ -546,23 +550,27 @@ def rel_dose_position_plot():
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
         ][::2],
-        lw=0.0, label=r'$270^{\circ}$',
+        lw=0.0, label=r'$270^{\circ}$', color='darkorange',
         markeredgecolor='darkorange', marker='^',
-        markeredgewidth=1, markersize=10, markerfacecolor='None'
+        markeredgewidth=1, markersize=10, markerfacecolor='None',
+        elinewidth=1.5, capsize=1.5
     )
 
     ax.legend(loc=0, prop={'size': 18})
-    ax.grid(True)
+    ax.grid(False)
     ax.set_title('X - axis', fontsize=20)
+    ax.set_yticks(arange(0.80, 1.06, 0.01))
     ax.set_ylim([0.80, 1.05])
-    ax.xaxis.set_tick_params(labelsize=17)
-    ax.yaxis.set_tick_params(labelsize=17)
-    ax.set_xticks(arange(x_min, x_max + 1, 2))
+    ax.xaxis.set_tick_params(labelsize=14)
+    ax.yaxis.set_tick_params(labelsize=14)
+    ax.set_xticks(arange(-10, 10 + 1, 1))
     ax.set_xlim([-10, 10])
+    ax.axhline(1.0, 0, 0.5, lw=1.5, color='gray')
 
-    ax_twin.set_ylim([0.0, 0.5])
-    ax_twin.set_yticks(arange(0.0, 0.5, 0.05))
-    ax_twin.yaxis.set_tick_params(labelsize=17)
+    ax_twin.grid(False)
+    ax_twin.set_ylim([0.0, 0.3])
+    ax_twin.set_yticks(arange(0.0, 0.31, 0.01))
+    ax_twin.yaxis.set_tick_params(labelsize=14)
     ax_twin.vlines([-1.5,1.5],0,1.0)
     ax_twin.fill_between([-1.5, 1.5], 1.05, facecolor='lightgray')
 
@@ -583,7 +591,7 @@ def rel_dose_position_plot():
     )
     fig.text(
         0.52, 0.95,
-        'Relative Dose vs. Position \n With Volume Correction; ncase = 1E9',
+        'Relative Dose vs. Position \n With Volume Correction; ncase = 1E10',
         fontsize=27, va='center', ha='center'
     )
     fig.tight_layout()
