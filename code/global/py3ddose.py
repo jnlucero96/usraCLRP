@@ -15,7 +15,9 @@ import numpy
 def position_to_index(p, A):
     """
     Description:
-    Checks entire position array A until it finds the 
+    Checks entire position array A until it finds the smallest value that is 
+    less than the input position and gives out the index of that position.
+    
     Inputs:
 
     Outputs:
@@ -80,7 +82,7 @@ class DoseFile(object):
             positions.append(bounds)
         
         # recall that dimensions are read in order x, y, z
-        positions = [positions[2], positions[1], positions[0]]
+        positions = [positions[0], positions[1], positions[2]]
         
         self.positions = positions
         self.spacing = [numpy.diff(p) for p in self.positions]
@@ -102,7 +104,7 @@ class DoseFile(object):
         assert len(self.dose) == self.size, \
         "len of dose = {} (expect {})".format(len(self.dose), self.size)
         # have dose array be in order (x, y, z)
-        self.dose = self.dose.reshape((self.shape)).transpose()
+        self.dose = self.dose.reshape((self.shape)).transpose((2,1,0))
         assert self.dose.size == self.size, \
         "Dose array size does not match that specified."
         
@@ -120,9 +122,12 @@ class DoseFile(object):
             # have uncertainty array be in order (x, y, z)
             self.uncertainty = self.uncertainty.reshape(
                 (self.shape)
-                ).transpose()
+                ).transpose((2,1,0))
             assert self.uncertainty.size == self.size, \
             "uncertainty array size does not match that specified."
+
+        # reset the shape of array to have the proper (x,y,z) ordering
+        self.shape = (x, y, z) 
             
     def dump(self, file_name):
         numpy.savez(file_name, dose=self.dose, uncertainty=self.uncertainty,

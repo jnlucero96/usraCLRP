@@ -13,10 +13,11 @@ from numpy import (
     )
 from scipy.interpolate import RegularGridInterpolator as RGI
 from py3ddose import DoseFile, position_to_index
+from normalize import get_conversion_factor
 
 from matplotlib.cm import get_cmap
 from matplotlib.style import use
-use('ggplot')
+use('seaborn-paper')
 from matplotlib.pyplot import subplots
 
 def generate_tdvh_mlwa():
@@ -198,19 +199,30 @@ def dose_position_plots():
 
     file_list = [
         target_dir +
-        '/mlwa_0shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_0shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_90shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_90shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_180shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_180shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_270shield_{0}_sim.phantom_wo_applicator.3ddose.gz'
     ]
 
+    air_kerma_strength = 326.05715
+    air_kerma_per_history = 1.1584E-13
+    max_dwell_time = 0.02917
+
     vox_size_list = [
-        '0.5mm',
-        '1mm',
-        '2mm',
+        # '0.5mm',
+        '1pt0mm',
+        '2pt0mm'
+    ]
+
+    shield_type_lst = [
+        '0 shield',
+        '90 shield',
+        '180 shield',
+        '270 shield'
     ]
 
     title_list = [
@@ -219,69 +231,109 @@ def dose_position_plots():
         'Z - axis'
     ]
 
-    for fig_index in xrange(3):
+    for fig_index in xrange(len(vox_size_list)):
 
         fig, ax = subplots(
-            3, 1, figsize=(10, 10),
-            sharex='col'
+            3, len(file_list), figsize=(10, 10),
+            sharex='all', sharey='all'
         )
 
-        for index2 in xrange(4):  # iterate through shield types
+        for index2 in xrange(len(file_list)):  # iterate through shield types
 
             full_data = DoseFile(
-                file_list[index2].format(vox_size_list[fig_index])
+                file_list[index2].format(vox_size_list[fig_index]),
+                load_uncertainty=True
             )
 
             Nx, Ny, Nz = full_data.shape
 
-            # scale to absolute dose using maximum individual dwell time
-            full_data.dose *= 8.2573429808917e13
+            # scale to absolute dose 
+            full_data.dose *= get_conversion_factor(air_kerma_strength,
+                air_kerma_per_history, max_dwell_time
+            )
+            full_data.uncertainty *= full_data.dose.__abs__()
 
             x_min, x_max = full_data.x_extent
             y_min, y_max = full_data.y_extent
             z_min, z_max = full_data.z_extent
 
-            for index1 in xrange(3):  # iterate through axes
+            x_pos = array(full_data.positions[0])
+            y_pos = array(full_data.positions[1])
+            z_pos = array(full_data.positions[2])
+
+            x_pos_mid = (x_pos[:-1] + x_pos[1:]) / 2.0
+            y_pos_mid = (y_pos[:-1] + y_pos[1:]) / 2.0
+            z_pos_mid = (z_pos[:-1] + z_pos[1:]) / 2.0
+
+            for index1 in xrange(3):  # iterate through axes x, y, and z
 
                 if index1 == 0:
-                    ax[index1, index2].plot(
-                        linspace(x_min, x_max, Nx), 
-                        full_data.dose[:, Ny // 2, Nz // 2],
-                        # yerr=full_data.uncertainty[Nz // 2, Ny // 2, :],
-                        lw=3.0
+                    ax[index1, index2].errorbar(
+                        x_pos_mid, 
+                        full_data.dose[
+                            :, 
+                            position_to_index(0.0, y_pos_mid),
+                            position_to_index(0.0, z_pos_mid)
+                            ],
+                        yerr=full_data.uncertainty[
+                            :, 
+                            position_to_index(0.0, y_pos_mid), 
+                            position_to_index(0.0, z_pos_mid)
+                            ],
+                        lw=3.0 
                     )
                 elif index1 == 1:
-                    ax[index1, index2].plot(
-                        linspace(y_min, y_max, Ny), 
-                        full_data.dose[Nz // 2, :, Nx // 2],
-                        # yerr=full_data.uncertainty[Nz // 2, :, Nx // 2],
+                    ax[index1, index2].errorbar(
+                        y_pos_mid,
+                        full_data.dose[
+                            position_to_index(0.0, x_pos_mid),
+                            :,
+                            position_to_index(0.0, z_pos_mid)
+                            ],
+                        yerr=full_data.uncertainty[
+                            position_to_index(0.0, x_pos_mid), 
+                            :, 
+                            position_to_index(0.0, z_pos_mid)
+                            ],
                         lw=3.0
                     )
                 else:
-                    ax[index1, index2].plot(
-                        linspace(z_min, z_max, Nz), 
-                        full_data.dose[Nx // 2, Ny // 2, :],
-                        # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                    ax[index1, index2].errorbar(
+                        z_pos_mid,
+                        full_data.dose[
+                            position_to_index(0.0, x_pos_mid), 
+                            position_to_index(0.0, y_pos_mid),
+                            :
+                            ],
+                        yerr=full_data.uncertainty[
+                            position_to_index(0.0, x_pos_mid), 
+                            position_to_index(0.0, y_pos_mid), 
+                            :
+                            ],
                         lw=3.0
                     )
 
         for n in xrange(3):
-            for m in xrange(4):
-                # ax[n].legend(loc=0,prop={'size':8})
+            for m in xrange(len(file_list)):
+                # ax[n, m].legend(loc=0,prop={'size':8})
                 ax[n, m].grid(True)
                 if n == 0:
-                    ax[n, m].set_title(title_list[n],fontsize=20)
+                    ax[n, m].set_title(shield_type_lst[m])
+                if m == len(file_list) - 1:
+                    ax[n, m].set_ylabel(title_list[n],fontsize=20)
+                    ax[n, m].yaxis.set_label_position('right')
                 ax[n, m].xaxis.set_tick_params(labelsize=14)
                 ax[n, m].yaxis.set_tick_params(labelsize=14)
                 if n == 2:
-                    ax[n, m].set_xticks(arange(z_min, z_max))
+                    ax[n, m].set_xticks(arange(-10, 10 + 1,5))
+                    ax[n, m].set_xlim([-10,10])
 
         fig.text(
             0.01, 0.51, 'Dose (Gy)',
-            fontsize=27, rotation='vertical', va='center'
+            fontsize=27, rotation='vertical', va='center', ha='center'
         )
         fig.text(
-            0.43, 0.03, 'Position (cm)', fontsize=27, va='center'
+            0.51, 0.03, 'Position (cm)', fontsize=27, va='center', ha='center'
         )
         fig.text(
             0.52, 0.95,
@@ -344,6 +396,8 @@ def rel_dose_position_plot():
     shielded_file_270 = target_dir + \
         '/mlwa_30mmOut_270shield_2pt0mm_sim.phantom_wo_applicator.3ddose.gz'
 
+    title_str = 'Relative Dose vs. Position \n 192Ir-As-Source; ncase = 5E9'
+
     fig, ax = subplots(
         1, 1, figsize=(10, 10)
         )
@@ -353,6 +407,12 @@ def rel_dose_position_plot():
     shield_90_data = DoseFile(shielded_file_90,load_uncertainty=True)
     shield_180_data = DoseFile(shielded_file_180,load_uncertainty=True)
     shield_270_data = DoseFile(shielded_file_270,load_uncertainty=True)
+
+    # print unshielded_full_data.shape
+    # print shield_90_data.shape
+    # print shield_180_data.shape
+    # print shield_270_data.shape
+    # exit(0)
 
     x_min, x_max = unshielded_full_data.x_extent
     z_min, z_max = unshielded_full_data.z_extent
@@ -449,6 +509,7 @@ def rel_dose_position_plot():
         x_pos_mid[::2],
         # shield_90_data.dose[
         shield_90_interpolated_dose_matrix[
+        # error_90[
             :, 
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
@@ -467,6 +528,7 @@ def rel_dose_position_plot():
         x_pos_mid[::2],
         # shield_90_data.dose[
         shield_90_interpolated_dose_matrix[
+        # error_90[
             :, 
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
@@ -486,6 +548,7 @@ def rel_dose_position_plot():
         x_pos_mid[::2],
         # shield_180_data.dose[
         shield_180_interpolated_dose_matrix[
+        # error_180[
             :,
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
@@ -504,6 +567,7 @@ def rel_dose_position_plot():
         x_pos_mid[::2],
         # shield_180_data.dose[
         shield_180_interpolated_dose_matrix[
+        # error_180[
             :,
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
@@ -523,6 +587,7 @@ def rel_dose_position_plot():
         x_pos_mid[::2],
         # shield_270_data.dose[
         shield_270_interpolated_dose_matrix[
+        # error_270[
             :,
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
@@ -541,6 +606,7 @@ def rel_dose_position_plot():
         x_pos_mid[::2],
         # shield_270_data.dose[
         shield_270_interpolated_dose_matrix[
+        # error_270[
             :,
             position_to_index(0.0, y_pos_mid),
             position_to_index(0.0, z_pos_mid)
@@ -559,8 +625,8 @@ def rel_dose_position_plot():
     ax.legend(loc=0, prop={'size': 18})
     ax.grid(False)
     ax.set_title('X - axis', fontsize=20)
-    ax.set_yticks(arange(0.80, 1.06, 0.01))
-    ax.set_ylim([0.80, 1.05])
+    ax.set_yticks(arange(0.80, 1.11, 0.01))
+    ax.set_ylim([0.80, 1.10])
     ax.xaxis.set_tick_params(labelsize=14)
     ax.yaxis.set_tick_params(labelsize=14)
     ax.set_xticks(arange(-10, 10 + 1, 1))
@@ -591,7 +657,7 @@ def rel_dose_position_plot():
     )
     fig.text(
         0.52, 0.95,
-        'Relative Dose vs. Position \n With Volume Correction; ncase = 1E10',
+        title_str,
         fontsize=27, va='center', ha='center'
     )
     fig.tight_layout()
@@ -626,34 +692,74 @@ def isodose_plot():
 
     file_list = [
         target_dir +
-        '/mlwa_0shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_0shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_90shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_90shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_180shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_180shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
+        '/mlwa_30mmOut_270shield_{0}_sim.phantom_wo_applicator.3ddose.gz'
+        # target_dir +
+        # '/mlwa_0shield_{0}_sim.phantom_wo_applicator.3ddose',
+        # target_dir +
+        # '/mlwa_90shield_{0}_sim.phantom_wo_applicator.3ddose',
+        # target_dir +
+        # '/mlwa_180shield_{0}_sim.phantom_wo_applicator.3ddose',
+        # target_dir +
+        # '/mlwa_270shield_{0}_sim.phantom_wo_applicator.3ddose'
     ]
 
-    vox_size_list = [
-        '1mm',
-        '2mm',
+    shield_type_lst = [
+        'Unshielded',
+        r'$90^{\circ}$ shield',
+        r'$180^{\circ}$ shield',
+        r'$270^{\circ}$ shield'
     ]
 
-    for fig_index in xrange(len(vox_size_list)):
+    vox_size_lst = [
+        # '1mm',
+        '2mm'
+    ]
+
+    vox_size_txt_lst = [
+        # '1pt0mm',
+        '2pt0mm'
+    ]
+
+    # title_str = 'Isodose Contours \n Applicator-As-Source; ncase = 5E9'
+    title_str = 'Isodose Contours \n 192Ir-As-Source; ncase = 5E9'
+
+    for fig_index in xrange(len(vox_size_lst)):
 
         fig, ax = subplots(
-            2, 2, figsize=(10, 10),
+            2, 2, figsize=(12, 12),
             sharex='all', sharey='all'
         )
         fig2, ax2 = subplots(
-            2, 2, figsize=(10, 10),
+            2, 2, figsize=(12, 12),
             sharex='all', sharey='all'
         )
 
         for file_index, file in enumerate(file_list):
 
-            full_data = DoseFile(file.format(vox_size_list[fig_index]))
+            full_data = DoseFile(file.format(vox_size_txt_lst[fig_index]))
+
+            y_position_to_index = {
+                position: index
+                for index, position in enumerate(full_data.positions[1])
+            }
+            z_position_to_index = {
+                position: index
+                for index, position in enumerate(full_data.positions[2])
+            }
+
+            x_pos = array(full_data.positions[0])
+            y_pos = array(full_data.positions[1])
+            z_pos = array(full_data.positions[2])
+
+            x_pos_mid = ((x_pos[1:]) + (x_pos[:-1])) / 2.0
+            y_pos_mid = ((y_pos[1:]) + (y_pos[:-1])) / 2.0
+            z_pos_mid = ((z_pos[1:]) + (z_pos[:-1])) / 2.0
 
             if file_index == 0:
                 ax_x, ax_y = 0, 0
@@ -666,46 +772,94 @@ def isodose_plot():
 
             Nx, Ny, Nz = full_data.shape
 
-            # scale to absolute dose using maximum individual dwell time
-            full_data.dose *= 8.2573429808917e13  
+            full_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
 
             full_data.dose /= 5  # normalize to desired dose of 5 Gy
-            # Express results in percent. Should see 100% at x=-2cm
-            full_data.dose *= 100  
+            full_data.dose *= 100  # express in percent. Should see 100% at x=-2cm
 
             x_min, x_max = full_data.x_extent
             y_min, y_max = full_data.y_extent
             z_min, z_max = full_data.z_extent
 
             xy_contour = ax[ax_x, ax_y].contourf(
-                linspace(x_min, x_max, Nx), linspace(y_min, y_max, Ny),
-                full_data.dose[:, :, Nz // 2].transpose(),
+                x_pos_mid, y_pos_mid,
+                # matplotlib plots column by row (instead of row by column)
+                # so transpose data array to account for this
+                full_data.dose[:, :, position_to_index(
+                    0.0, z_pos_mid)].transpose(),
                 arange(0, 110, 10),
-                # cmap=get_cmap('Purples')
+                # [5, 10, 20, 50, 100],
+                # cmap=get_cmap('gnuplot')
             )
+            # ax[ax_x, ax_y].contour(
+            #     x_pos_mid, y_pos_mid,
+            #     # matplotlib plots column by row (instead of row by column)
+            #     # so transpose data array to account for this
+            #     full_data.dose[:, :, position_to_index(0.0, z_pos_mid)].transpose(),
+            #     # arange(0, 110, 10),
+            #     [5, 10, 20, 50, 100],
+            #     cmap=get_cmap('RdPu')
+            # )
+            ax[ax_x, ax_y].set_title(shield_type_lst[file_index], fontsize=15)
 
             xz_contour = ax2[ax_x, ax_y].contourf(
-                linspace(x_min, x_max, Nx), linspace(z_min, z_max, Nz),
-                full_data.dose[:, Ny // 2, :].transpose(),
+                x_pos_mid, z_pos_mid,
+                # matplotlib plots column by row (instead of row by column)
+                # so transpose data array to account for this
+                full_data.dose[:, position_to_index(
+                    0.0, y_pos_mid), :].transpose(),
                 arange(0, 110, 10),
-                # cmap=get_cmap('Purples')
+                # [5, 10, 20, 50, 100],
+                # cmap=get_cmap('gnuplot')
             )
+            # ax2[ax_x, ax_y].contour(
+            #     x_pos_mid, z_pos_mid,
+            #     # matplotlib plots column by row (instead of row by column)
+            #     # so transpose data array to account for this
+            #     full_data.dose[:, position_to_index(0.0, y_pos_mid), :].transpose(),
+            #     # arange(0, 110, 10),
+            #     [5, 10, 20, 50, 100],
+            #     cmap=get_cmap('RdPu')
+            # )
+            ax2[ax_x, ax_y].set_title(shield_type_lst[file_index], fontsize=15)
 
-        for n in xrange(2): 
+        for n in xrange(2):
             for m in xrange(2):
 
-                ax[n, m].grid(True)
-                ax[n, m].xaxis.set_tick_params(labelsize=14)
-                ax[n, m].yaxis.set_tick_params(labelsize=14)
-                ax[n, m].set_xticks(arange(x_min, x_max + 1, 2))
-                ax[n, m].set_yticks(arange(y_min, y_max + 1, 2))
+                # ax[n, m].grid(True)
+                ax[n, m].xaxis.set_tick_params(
+                    labelsize=14, top=True, direction='in'
+                )
+                ax[n, m].yaxis.set_tick_params(
+                    labelsize=14, right=True, direction='in'
+                )
+                ax[n, m].set_xticks(arange(-10, 10 + 1, 2))
+                ax[n, m].set_xlim([-10, 10])
+                ax[n, m].set_yticks(arange(-10, 10 + 1, 2))
+                ax[n, m].set_ylim([-10, 10])
+                # ax[n, m].vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+                # ax[n, m].hlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+                # ax[n, m].vlines([0], -10, 10, linestyles='dashed',
+                #                 lw=2.0, color='darkgoldenrod')
+                # ax[n, m].hlines([0], -10, 10, linestyles='dashed',
+                #                 lw=2.0, color='darkgoldenrod')
 
-                ax2[n ,m].xaxis.set_tick_params(labelsize=14)
-                ax2[n ,m].yaxis.set_tick_params(labelsize=14)
-                ax2[n ,m].set_xticks(arange(x_min, x_max + 1, 2))
-                ax2[n ,m].set_yticks(arange(y_min, y_max + 1, 2))
-                ax2[n ,m].vlines([-2, 2],-10, 10,linestyles='dashed',lw=2.0)
-                ax2[n ,m].grid(True)
+                # ax2[n, m].grid(True)
+                ax2[n, m].xaxis.set_tick_params(
+                    labelsize=14, top=True, direction='in'
+                )
+                ax2[n, m].yaxis.set_tick_params(
+                    labelsize=14, right=True, direction='in'
+                )
+                ax2[n, m].set_xticks(arange(-10, 10 + 1, 2))
+                ax2[n, m].set_xlim([-10, 10])
+                ax2[n, m].set_yticks(arange(-10, 10 + 1, 2))
+                ax2[n, m].set_ylim([-10, 10])
+
+                # ax2[n, m].vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+                # ax2[n, m].vlines([0], -10, 10, linestyles='dashed', lw=2.0, color='darkgoldenrod')
+                # ax2[n, m].hlines([0], -10, 10, linestyles='dashed',
+                #                  lw=2.0, color='darkgoldenrod')
 
         fig.text(
             0.01, 0.51, 'y-axis (cm)',
@@ -716,7 +870,7 @@ def isodose_plot():
         )
         fig.text(
             0.52, 0.95,
-            'Isodose Contours \n With Volume Correction; ncase = 1E9',
+            title_str,
             fontsize=27, va='center', ha='center'
         )
 
@@ -732,15 +886,15 @@ def isodose_plot():
         left = 0.1  # the left side of the subplots of the figure
         right = 0.89    # the right side of the subplots of the figure
         bottom = 0.09   # the bottom of the subplots of the figure
-        top = 0.90     # the top of the subplots of the figure
-        # wspace = 0.2  # the amount of width for blank space between subplots
-        # hspace = 0.2  # the amount of height for white space between subplots
+        top = 0.88     # the top of the subplots of the figure
+        # wspace = 0.2  # the amount of width reserved for blank space between subplots
+        # hspace = 0.2  # the amount of height reserved for white space between subplotss
 
         fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
         fig.savefig(
-            pwd + '/xy_isodose_profile_' + vox_size_list[fig_index] + '.pdf'
-            )
+            pwd + '/xy_isodose_profile_' + vox_size_lst[fig_index] + '.pdf'
+        )
 
         fig2.text(
             0.01, 0.51, 'z-axis (cm)',
@@ -751,7 +905,7 @@ def isodose_plot():
         )
         fig2.text(
             0.52, 0.95,
-            'Isodose Contours \n With Volume Correction; ncase = 1E9',
+            title_str,
             fontsize=27, va='center', ha='center'
         )
         cax2 = fig2.add_axes([0.91, 0.13, 0.01, 0.7])
@@ -760,7 +914,6 @@ def isodose_plot():
             ax=ax
         )
         cbar2.set_label('Percentage Isodose (%)', fontsize=24)
-        cbar2.set_clim([0, 100])
         cbar2.ax.tick_params(labelsize=14)
 
         fig2.tight_layout()
@@ -768,15 +921,15 @@ def isodose_plot():
         left = 0.1  # the left side of the subplots of the figure
         right = 0.89    # the right side of the subplots of the figure
         bottom = 0.09   # the bottom of the subplots of the figure
-        top = 0.90     # the top of the subplots of the figure
-        # wspace = 0.2  # the amount of width for blank space between subplots
-        # hspace = 0.2  # the amount of height for white space between subplots
+        top = 0.88     # the top of the subplots of the figure
+        # wspace = 0.2  # the amount of width reserved for blank space between subplots
+        # hspace = 0.2  # the amount of height reserved for white space between subplotss
 
         fig2.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
         fig2.savefig(
-            pwd + '/xz_isodose_profile_' + vox_size_list[fig_index] + '.pdf'
-            )
+            pwd + '/xz_isodose_profile_' + vox_size_lst[fig_index] + '.pdf'
+        )
     
 if __name__ == "__main__":
     program_name, arguments = argv[0], argv[1:]

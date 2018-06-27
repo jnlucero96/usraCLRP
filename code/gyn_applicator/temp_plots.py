@@ -22,9 +22,6 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MultipleLocator
 # from mpl_toolkits.mplot3d import Axes3D
 
-
-
-    
 def dose_position_plots():
     """
     Description:
@@ -471,6 +468,8 @@ def rel_dose_position_plot():
     shielded_file_270 = target_dir + \
         '/mlwa_30mmOut_270shield_2pt0mm_sim.phantom_wo_applicator.3ddose.gz'
 
+    title_str = 'Relative Dose vs. Position \n Applicator-as-source; ncase = 5E9'
+
     fig, ax = subplots(
         1, 1, figsize=(5,3)
         )
@@ -717,7 +716,7 @@ def rel_dose_position_plot():
     )
     fig.text(
         0.52, 0.93,
-        'Relative Dose vs. Position \n With Volume Correction; ncase = 1E10',
+        title_str,
         fontsize=10, va='center', ha='center'
     )
     fig.tight_layout()
@@ -731,7 +730,7 @@ def rel_dose_position_plot():
 
     fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
-    fig.savefig(pwd + '/relative_dosage_comparison.pdf')
+    fig.savefig(pwd + '/relative_dosage_comparison_nb.pdf')
     
 def isodose_plot():
     """
@@ -751,13 +750,13 @@ def isodose_plot():
 
     file_list = [
         target_dir +
-        '/mlwa_30mmOut_0shield_{0}_sim.phantom_wo_applicator.to.3ddose.gz',
+        '/mlwa_30mmOut_0shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_30mmOut_90shield_{0}_sim.phantom_wo_applicator.to.3ddose.gz',
+        '/mlwa_30mmOut_90shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_30mmOut_180shield_{0}_sim.phantom_wo_applicator.to.3ddose.gz',
+        '/mlwa_30mmOut_180shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_30mmOut_270shield_{0}_sim.phantom_wo_applicator.to.3ddose.gz'
+        '/mlwa_30mmOut_270shield_{0}_sim.phantom_wo_applicator.3ddose.gz'
         # target_dir +
         # '/mlwa_0shield_{0}_sim.phantom_wo_applicator.3ddose',
         # target_dir +
@@ -785,14 +784,16 @@ def isodose_plot():
         '2pt0mm'
     ]
 
+    title_str = 'Isodose Contours \n Applicator-as-source; ncase = 5E9'
+
     for fig_index in xrange(len(vox_size_lst)):
 
         fig, ax = subplots(
-            2, 2, figsize=(12, 12),
+            2, 2, figsize=(5, 5),
             sharex='all', sharey='all'
         )
         fig2, ax2 = subplots(
-            2, 2, figsize=(12, 12),
+            2, 2, figsize=(5, 5),
             sharex='all', sharey='all'
         )
 
@@ -828,10 +829,10 @@ def isodose_plot():
 
             Nx, Ny, Nz = full_data.shape
 
-            # full_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
+            full_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
 
-            # full_data.dose /= 5  # normalize to desired dose of 5 Gy
-            # full_data.dose *= 100  # express in percent. Should see 100% at x=-2cm
+            full_data.dose /= 5  # normalize to desired dose of 5 Gy
+            full_data.dose *= 100  # express in percent. Should see 100% at x=-2cm
 
             x_min, x_max = full_data.x_extent
             y_min, y_max = full_data.y_extent
@@ -842,7 +843,7 @@ def isodose_plot():
                 # matplotlib plots column by row (instead of row by column)
                 # so transpose data array to account for this
                 full_data.dose[:, :, position_to_index(0.0, z_pos_mid)].transpose(),
-                # arange(0, 110, 10),
+                arange(0, 110, 10),
                 # [5, 10, 20, 50, 100],
                 # cmap=get_cmap('gnuplot')
             )
@@ -855,14 +856,14 @@ def isodose_plot():
             #     [5, 10, 20, 50, 100],
             #     cmap=get_cmap('RdPu')
             # )
-            ax[ax_x, ax_y].set_title(shield_type_lst[file_index], fontsize=15)
+            ax[ax_x, ax_y].set_title(shield_type_lst[file_index], fontsize=8)
 
             xz_contour = ax2[ax_x, ax_y].contourf(
                 x_pos_mid, z_pos_mid,
                 # matplotlib plots column by row (instead of row by column)
                 # so transpose data array to account for this
                 full_data.dose[:, position_to_index(0.0, y_pos_mid), :].transpose(),
-                # arange(0, 110, 10),
+                arange(0, 110, 10),
                 # [5, 10, 20, 50, 100],
                 # cmap=get_cmap('gnuplot')
             )
@@ -875,17 +876,17 @@ def isodose_plot():
             #     [5, 10, 20, 50, 100], 
             #     cmap=get_cmap('RdPu')
             # )
-            ax2[ax_x, ax_y].set_title(shield_type_lst[file_index], fontsize=15)
+            ax2[ax_x, ax_y].set_title(shield_type_lst[file_index], fontsize=8)
 
         for n in xrange(2):
             for m in xrange(2):
 
                 # ax[n, m].grid(True)
                 ax[n, m].xaxis.set_tick_params(
-                    labelsize=14, top=True, direction='in'
+                    labelsize=6, top=True, direction='in'
                     )
                 ax[n, m].yaxis.set_tick_params(
-                    labelsize=14, right=True, direction='in'
+                    labelsize=6, right=True, direction='in'
                     )
                 ax[n, m].set_xticks(arange(-10, 10 + 1, 2))
                 ax[n, m].set_xlim([-10,10])
@@ -900,10 +901,10 @@ def isodose_plot():
 
                 # ax2[n, m].grid(True)
                 ax2[n, m].xaxis.set_tick_params(
-                    labelsize=14, top=True, direction='in'
+                    labelsize=6, top=True, direction='in'
                     )
                 ax2[n, m].yaxis.set_tick_params(
-                    labelsize=14, right=True, direction='in'
+                    labelsize=6, right=True, direction='in'
                     )
                 ax2[n, m].set_xticks(arange(-10, 10 + 1, 2))
                 ax2[n, m].set_xlim([-10, 10])
@@ -918,28 +919,28 @@ def isodose_plot():
 
         fig.text(
             0.01, 0.51, 'y-axis (cm)',
-            fontsize=27, rotation='vertical', va='center'
+            fontsize=10, rotation='vertical', va='center'
         )
         fig.text(
-            0.43, 0.03, 'x-axis (cm)', fontsize=27, va='center'
+            0.43, 0.03, 'x-axis (cm)', fontsize=10, va='center'
         )
         fig.text(
-            0.52, 0.95,
-            'Isodose Contours \n With Volume Correction; ncase = 5E9',
-            fontsize=27, va='center', ha='center'
+            0.52, 0.965,
+            title_str,
+            fontsize=10, va='center', ha='center'
         )
 
-        cax = fig.add_axes([0.91, 0.13, 0.01, 0.7])
+        cax = fig.add_axes([0.88, 0.09, 0.01, 0.79])
         cbar1 = fig.colorbar(
             xy_contour, cax=cax, orientation='vertical',
             ax=ax
         )
-        cbar1.set_label('Percentage Isodose (%)', fontsize=24)
-        cbar1.ax.tick_params(labelsize=14)
+        cbar1.set_label('Percentage Isodose (%)', fontsize=10)
+        cbar1.ax.tick_params(labelsize=8)
         fig.tight_layout()
 
         left = 0.1  # the left side of the subplots of the figure
-        right = 0.89    # the right side of the subplots of the figure
+        right = 0.86    # the right side of the subplots of the figure
         bottom = 0.09   # the bottom of the subplots of the figure
         top = 0.88     # the top of the subplots of the figure
         # wspace = 0.2  # the amount of width reserved for blank space between subplots
@@ -948,33 +949,33 @@ def isodose_plot():
         fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
         fig.savefig(
-            pwd + '/xy_isodose_profile_' + vox_size_lst[fig_index] + '.pdf'
+            pwd + '/xy_isodose_profile_' + vox_size_lst[fig_index] + '_nb.pdf'
         )
 
         fig2.text(
             0.01, 0.51, 'z-axis (cm)',
-            fontsize=27, rotation='vertical', va='center'
+            fontsize=10, rotation='vertical', va='center'
         )
         fig2.text(
-            0.43, 0.03, 'x-axis (cm)', fontsize=27, va='center'
+            0.43, 0.03, 'x-axis (cm)', fontsize=10, va='center'
         )
         fig2.text(
-            0.52, 0.95,
-            'Isodose Contours \n With Volume Correction; ncase = 1E9',
-            fontsize=27, va='center', ha='center'
+            0.52, 0.965,
+            title_str,
+            fontsize=10, va='center', ha='center'
         )
-        cax2 = fig2.add_axes([0.91, 0.13, 0.01, 0.7])
+        cax2 = fig2.add_axes([0.88, 0.09, 0.01, 0.79])
         cbar2 = fig2.colorbar(
             xz_contour, cax=cax2, orientation='vertical',
             ax=ax
         )
-        cbar2.set_label('Percentage Isodose (%)', fontsize=24)
-        cbar2.ax.tick_params(labelsize=14)
+        cbar2.set_label('Percentage Isodose (%)', fontsize=10)
+        cbar2.ax.tick_params(labelsize=8)
 
         fig2.tight_layout()
 
         left = 0.1  # the left side of the subplots of the figure
-        right = 0.89    # the right side of the subplots of the figure
+        right = 0.86    # the right side of the subplots of the figure
         bottom = 0.09   # the bottom of the subplots of the figure
         top = 0.88     # the top of the subplots of the figure
         # wspace = 0.2  # the amount of width reserved for blank space between subplots
@@ -983,7 +984,7 @@ def isodose_plot():
         fig2.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
         fig2.savefig(
-            pwd + '/xz_isodose_profile_' + vox_size_lst[fig_index] + '.pdf'
+            pwd + '/xz_isodose_profile_' + vox_size_lst[fig_index] + '_nb.pdf'
         )
 
 def inverse_isodose_plot():
@@ -1217,6 +1218,6 @@ def get_dose_at_points():
 if __name__ == "__main__":
     # dose_position_plots()
     # dose_inv_position_interpolate_plots()
-    rel_dose_position_plot()
-    # isodose_plot()
+    # rel_dose_position_plot()
+    isodose_plot()
     # inverse_isodose_plot()
