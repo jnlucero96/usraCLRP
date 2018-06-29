@@ -1,3 +1,5 @@
+#!/usr/bin/env
+
 import sys
 import dicom
 import numpy as np
@@ -83,9 +85,9 @@ for PatientNumber in PatientNumbers:
         elif '_RTst_' in current_dir:
             ContourFilePath = FilePath + current_dir + '/'
 
-        ############################################################################
-        # Opening and Sorting and Arraying the CT Files
-        ############################################################################
+    ############################################################################
+    # Opening and Sorting and Arraying the CT Files
+    ############################################################################
 
     print('Importing and Arranging CT Data')
     print('-' * 50)
@@ -190,9 +192,9 @@ for PatientNumber in PatientNumbers:
         for j in range(len(xbounds) - 1):
             voxel_centers.append(((xbounds[j] + 0.5 * Voxel_Size[0] / 10), (ybounds[i] + 0.5 * Voxel_Size[1] / 10)))
 
-        ###################################################################
-        ## Metallic Artifact Reduction
-        ###################################################################
+    ###################################################################
+    ## Metallic Artifact Reduction
+    ###################################################################
 
     print('\nAttempting to preform Metallic Artifact Reduction')
     print('-' * 50)

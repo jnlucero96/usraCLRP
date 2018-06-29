@@ -9,10 +9,11 @@ from sys import argv, exit
 from os import getcwd
 
 from numpy import (
-    linspace, histogram, arange, meshgrid, array, empty, around, sqrt
+    linspace, histogram, arange, meshgrid, array, empty, around, sqrt, zeros
     )
 from scipy.interpolate import RegularGridInterpolator as RGI
 from py3ddose import DoseFile, position_to_index
+from normalize import get_conversion_factor
 
 from matplotlib.cm import get_cmap
 from matplotlib.style import use
@@ -155,7 +156,7 @@ def dose_position_plots():
 
         fig.savefig(pwd + '/dosage_comparison_' + vox_size_lst[fig_index] + '.pdf')
 
-def dose_inv_position_interpolate_plots(interpolation=False):
+def dose_inv_position_plots(interpolate=False):
     """
     Description:
     Takes any number of .3ddose files and plots a plethora of diagnostic plots 
@@ -181,13 +182,13 @@ def dose_inv_position_interpolate_plots(interpolation=False):
         # target_dir +
         # '/mlwa_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
         target_dir +
-        '/mlwa_30mmOut_0shield_{0}_sim.phantom_wo_applicator.3ddose',
+        '/mlwa_30mmOut_0shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_30mmOut_90shield_{0}_sim.phantom_wo_applicator.3ddose',
+        '/mlwa_30mmOut_90shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_30mmOut_180shield_{0}_sim.phantom_wo_applicator.3ddose',
+        '/mlwa_30mmOut_180shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         target_dir +
-        '/mlwa_30mmOut_270shield_{0}_sim.phantom_wo_applicator.3ddose'
+        '/mlwa_30mmOut_270shield_{0}_sim.phantom_wo_applicator.3ddose.gz'
         # target_dir +
         # '/tg43_{0}_sim.phantom_wo_box.3ddose',
         # target_dir +
@@ -197,8 +198,8 @@ def dose_inv_position_interpolate_plots(interpolation=False):
     shield_type_lst = [
         'Unshielded',
         '90',
-        # '180',
-        # '270'
+        '180',
+        '270'
     ]
 
     vox_size_lst = [
@@ -217,29 +218,37 @@ def dose_inv_position_interpolate_plots(interpolation=False):
         'z-cuts (|x| = {0}, y = {1})'
     ]
 
-    for x_pos_desired in [1.62]:
-        # for y_pos in around(arange(-2.0, 2.2, 0.2), 1):
-        for y_pos_desired in [0.0]:
+    air_kerma_str = 326.05715
+    air_kerma_per_hist = 1.1584e-13
+    max_dwell_time = 0.02917
+
+    for x_pos_desired in [1.51, 1.61]:
+        print '=' * 40
+        print "x-position =", x_pos_desired
+        for y_pos_desired in [-0.01,0.01]:
+            print "y-position =", y_pos_desired
             for fig_index in xrange(len(vox_size_lst)):
                 for index2 in xrange(len(shield_type_lst)):  # iterate through shield types
 
-                    fig = figure(figsize=(15,10))
-                    minor_locator = MultipleLocator(0.5)
-                    minor_locator2 = MultipleLocator(0.5)
-                    gs = GridSpec(ncols=2, nrows=2)
+                    # fig = figure(figsize=(15,10))
+                    # minor_locator = MultipleLocator(0.5)
+                    # minor_locator2 = MultipleLocator(0.5)
+                    # gs = GridSpec(ncols=2, nrows=2)
 
-                    ax1 = fig.add_subplot(gs[0, 0])
-                    ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
-                    ax3 = fig.add_subplot(gs[1, :])
+                    # ax1 = fig.add_subplot(gs[0, 0])
+                    # ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
+                    # ax3 = fig.add_subplot(gs[1, :])
 
-                    ax = [ax1, ax2, ax3]
+                    # ax = [ax1, ax2, ax3]
 
                     full_data = DoseFile(
                         file_list[index2].format(vox_size_txt_lst[fig_index])
                     )
 
                     # scale to maximum individual dwell time
-                    full_data.dose *= 8.2573429808917e13
+                    full_data.dose *= get_conversion_factor(
+                        air_kerma_str, air_kerma_per_hist, max_dwell_time
+                    )
 
                     Nx, Ny, Nz = full_data.shape
 
@@ -251,11 +260,11 @@ def dose_inv_position_interpolate_plots(interpolation=False):
                     y_pos = array(full_data.positions[1])
                     z_pos = array(full_data.positions[2])
 
-                    x_pos_mid = (x_pos[1:] + x_pos[:-1]) / 2.0
-                    y_pos_mid = (y_pos[1:] + y_pos[:-1]) / 2.0
-                    z_pos_mid = (z_pos[1:] + z_pos[:-1]) / 2.0
+                    x_pos_mid = (x_pos[:-1] + x_pos[1:]) / 2.0
+                    y_pos_mid = (y_pos[:-1] + y_pos[1:]) / 2.0
+                    z_pos_mid = (z_pos[:-1] + z_pos[1:]) / 2.0
 
-                    if interpolation:
+                    if interpolate:
 
                         interpolated_dose = RGI(
                             (x_pos_mid, y_pos_mid, z_pos_mid), 
@@ -326,109 +335,118 @@ def dose_inv_position_interpolate_plots(interpolation=False):
                         )
 
                     else: 
+
+                        if "1pt0" in vox_size_txt_lst[fig_index]:
+                            pass 
+                        else:
                     
-                        dose_matrix = full_data.dose
+                            dose_matrix = full_data.dose
 
-                        z_depths = empty(z_pos_mid.size)
-                        
-                        for z_depth_index in xrange(z_pos_mid.size):
-                            z_depths[z_depth_index] = (
-                                dose_matrix[
-                                    position_to_index(x_pos_desired,x_pos_mid),
-                                    position_to_index(y_pos_desired,y_pos_mid),
-                                    z_depth_index
-                                ] / dose_matrix[
-                                    position_to_index(-x_pos_desired,x_pos_mid), 
-                                    position_to_index(y_pos_desired,y_pos_mid), 
-                                    z_depth_index
-                                ] 
-                            )
-                        ax[0].plot(
-                            z_pos_mid,
-                            dose_matrix[
-                                position_to_index(x_pos_desired, x_pos_mid),
-                                # :,
-                                position_to_index(y_pos_desired, y_pos_mid),
-                                :
-                            ],
-                            # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
-                            lw=3.0
-                        )
-                        ax[1].plot(
-                            z_pos_mid,
-                            # x_pos, y_pos,
-                            dose_matrix[
-                                position_to_index(-x_pos_desired, x_pos_mid),
-                                # :,
-                                position_to_index(y_pos_desired, y_pos_mid),
-                                :
-                                # z_position_to_index[0.0]
-                            ],
-                            # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
-                            lw=3.0
-                        )
-                        ax[2].plot(
-                            z_pos_mid,
-                            z_depths * 100,
-                            # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
-                            lw=3.0
-                        )
+                            z_depths = empty(z_pos_mid.size)
+                            
+                            for z_depth_index in xrange(z_pos_mid.size):
+                                z_depths[z_depth_index] = (
+                                    dose_matrix[
+                                        position_to_index(x_pos_desired,x_pos_mid),
+                                        position_to_index(y_pos_desired,y_pos_mid),
+                                        z_depth_index
+                                    ] / dose_matrix[
+                                        position_to_index(-x_pos_desired,x_pos_mid), 
+                                        position_to_index(y_pos_desired,y_pos_mid), 
+                                        z_depth_index
+                                    ] 
+                                )
 
-                    ax[0].set_ylabel(
-                        r"$D_{\mathrm{shielded}}$ (Gy)", fontsize=17
-                        )
-                    ax[1].set_ylabel(
-                        r"$D_{\mathrm{unshielded}}$ (Gy)", fontsize=17
-                        )
-                    ax[2].set_ylabel(
-                        r"$D_{\mathrm{shielded}}\ /\ D_{\mathrm{unshielded}}$ (%)", 
-                        fontsize = 17
-                        )
+                            print "For shield type:", shield_type_lst[index2], ", voxel size:", vox_size_lst[fig_index]
+                            print "mean =", z_depths.mean(), ", std. deviation =", z_depths.std()
+                            print 
 
-                    for m in xrange(3):
-                        ax[m].grid(True, which='both')
-                        ax[m].set_xticks(arange(z_min, z_max + 1, 1))
-                        ax[m].xaxis.set_minor_locator(minor_locator)
-                        if m != 2:
-                            ax[m].yaxis.set_minor_locator(minor_locator2)
-                        ax[m].xaxis.set_tick_params(labelsize=12)
-                        ax[m].yaxis.set_tick_params(labelsize=12)
-                        ax[m].set_xlim([-10,10])
+                    #     ax[0].plot(
+                    #         z_pos_mid,
+                    #         dose_matrix[
+                    #             position_to_index(x_pos_desired, x_pos_mid),
+                    #             # :,
+                    #             position_to_index(y_pos_desired, y_pos_mid),
+                    #             :
+                    #         ],
+                    #         # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                    #         lw=3.0
+                    #     )
+                    #     ax[1].plot(
+                    #         z_pos_mid,
+                    #         # x_pos, y_pos,
+                    #         dose_matrix[
+                    #             position_to_index(-x_pos_desired, x_pos_mid),
+                    #             # :,
+                    #             position_to_index(y_pos_desired, y_pos_mid),
+                    #             :
+                    #             # z_position_to_index[0.0]
+                    #         ],
+                    #         # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                    #         lw=3.0
+                    #     )
+                    #     ax[2].plot(
+                    #         z_pos_mid,
+                    #         z_depths * 100,
+                    #         # yerr=full_data.uncertainty[:, Ny // 2, Nx // 2],
+                    #         lw=3.0
+                    #     )
 
+                    # ax[0].set_ylabel(
+                    #     r"$D_{\mathrm{shielded}}$ (Gy)", fontsize=17
+                    #     )
+                    # ax[1].set_ylabel(
+                    #     r"$D_{\mathrm{unshielded}}$ (Gy)", fontsize=17
+                    #     )
+                    # ax[2].set_ylabel(
+                    #     r"$D_{\mathrm{shielded}}\ /\ D_{\mathrm{unshielded}}$ (%)", 
+                    #     fontsize = 17
+                    #     )
+
+                    # for m in xrange(3):
+                    #     ax[m].grid(True, which='both')
+                    #     ax[m].set_xticks(arange(-10, 10 + 1, 1))
+                    #     ax[m].xaxis.set_minor_locator(minor_locator)
+                    #     if m != 2:
+                    #         ax[m].yaxis.set_minor_locator(minor_locator2)
+                    #     ax[m].xaxis.set_tick_params(labelsize=12)
+                    #     ax[m].yaxis.set_tick_params(labelsize=12)
+                    #     ax[m].set_xlim([-10,10])
+
+                    # # fig.text(
+                    # #     0.01, 0.51, 'Ratio at depths',
+                    # #     fontsize=27, rotation='vertical', va='center'
+                    # # )
                     # fig.text(
-                    #     0.01, 0.51, 'Ratio at depths',
-                    #     fontsize=27, rotation='vertical', va='center'
+                    #     0.55, 0.03, 'Depth of cut (cm)', fontsize=27, va='center',
+                    #     ha='center'
                     # )
-                    fig.text(
-                        0.55, 0.03, 'Depth of cut (cm)', fontsize=27, va='center',
-                        ha='center'
-                    )
-                    fig.text(
-                        0.52, 0.95,
-                        'Dose Ratios vs. Depth \n With Volume Correction; ncase = 1E9',
-                        fontsize=27, va='center', ha='center'
-                    )
-                    fig.tight_layout()
+                    # fig.text(
+                    #     0.52, 0.95,
+                    #     'Dose Ratios vs. Depth \n With Volume Correction; ncase = 1E9',
+                    #     fontsize=27, va='center', ha='center'
+                    # )
+                    # fig.tight_layout()
 
-                    left = 0.09  # the left side of the subplots of the figure
-                    right = 0.97    # the right side of the subplots of the figure
-                    bottom = 0.09   # the bottom of the subplots of the figure
-                    top = 0.87     # the top of the subplots of the figure
-                    # wspace = 0.2  # the amount of width for blank space between subplots
-                    # hspace = 0.2  # the amount of height for white space between subplots
+                    # left = 0.09  # the left side of the subplots of the figure
+                    # right = 0.97    # the right side of the subplots of the figure
+                    # bottom = 0.09   # the bottom of the subplots of the figure
+                    # top = 0.87     # the top of the subplots of the figure
+                    # # wspace = 0.2  # the amount of width for blank space between subplots
+                    # # hspace = 0.2  # the amount of height for white space between subplots
 
-                    fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
+                    # fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
-                    fig.savefig(
-                        pwd + '/dosage_inv_comparison_' + vox_size_lst[fig_index] 
-                        + '_shield' + str(shield_type_lst[index2])
-                        + '_x' + str(x_pos_desired) + '_y' + str(y_pos_desired) 
-                        + '.pdf'
-                        )
+                    # fig.savefig(
+                    #     pwd + '/dosage_inv_comparison_' + vox_size_lst[fig_index] 
+                    #     + '_shield' + str(shield_type_lst[index2])
+                    #     + '_x' + str(x_pos_desired) + '_y' + str(y_pos_desired) 
+                    #     + '.pdf'
+                    #     )
 
-                    close(fig)
+                    # close(fig)
 
-def rel_dose_position_plot():
+def rel_dose_position_plot(interpolate=False):
     """
     Description:
     Takes any number of .3ddose files and plots a plethora of diagnostic plots 
@@ -443,18 +461,6 @@ def rel_dose_position_plot():
 
     # target_dir = '/Users/JLucero/MPhysProj/results_not_to_git' for home
     target_dir = '/Users/student/research/results_not_to_git'  # for work
-
-    # unshielded_file = target_dir + \
-    #     '/mlwa_0shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
-
-    # shielded_file_90 =  target_dir + \
-    #     '/mlwa_90shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
-
-    # shielded_file_180 = target_dir + \
-    #     '/mlwa_180shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
-
-    # shielded_file_270 = target_dir + \
-    #     '/mlwa_270shield_2pt0mm_sim.phantom_wo_applicator_wo_box.3ddose'
 
     unshielded_file = target_dir + \
         '/mlwa_30mmOut_0shield_2pt0mm_sim.phantom_wo_applicator.3ddose.gz'
@@ -491,47 +497,6 @@ def rel_dose_position_plot():
     y_pos_mid = (y_pos[1:] + y_pos[:-1]) / 2.0
     z_pos_mid = (z_pos[1:] + z_pos[:-1]) / 2.0
 
-    # unshielded_interpolated_dose = RGI(
-    #     (x_pos_mid, y_pos_mid, z_pos_mid),
-    #     unshielded_full_data.dose,
-    #     bounds_error=False,
-    #     fill_value=None
-    # )
-    # shield_90_interpolated_dose = RGI(
-    #     (x_pos_mid, y_pos_mid, z_pos_mid),
-    #     shield_90_data.dose,
-    #     bounds_error=False,
-    #     fill_value=None
-    # )
-    # shield_180_interpolated_dose = RGI(
-    #     (x_pos_mid, y_pos_mid, z_pos_mid),
-    #     shield_180_data.dose,
-    #     bounds_error=False,
-    #     fill_value=None
-    # )
-    # shield_270_interpolated_dose = RGI(
-    #     (x_pos_mid, y_pos_mid, z_pos_mid),
-    #     shield_270_data.dose,
-    #     bounds_error=False,
-    #     fill_value=None
-    # )
-
-    # points = meshgrid(x_pos, y_pos, z_pos)
-    # flat = array([m.flatten() for m in points])
-
-    # unshielded_interpolated_dose_matrix = unshielded_interpolated_dose(
-    #     flat.transpose()
-    # ).reshape(*points[0].shape).transpose((1, 0, 2))
-    # shield_90_interpolated_dose_matrix = shield_90_interpolated_dose(
-    #     flat.transpose()
-    # ).reshape(*points[0].shape).transpose((1, 0, 2))
-    # shield_180_interpolated_dose_matrix = shield_180_interpolated_dose(
-    #     flat.transpose()
-    # ).reshape(*points[0].shape).transpose((1, 0, 2))
-    # shield_270_interpolated_dose_matrix = shield_270_interpolated_dose(
-    #     flat.transpose()
-    # ).reshape(*points[0].shape).transpose((1, 0, 2))
-
     x_position_to_index = {
         x_position: x_index
         for x_index, x_position in enumerate(unshielded_full_data.positions[0])
@@ -545,31 +510,81 @@ def rel_dose_position_plot():
         for z_index, z_position in enumerate(unshielded_full_data.positions[2])
     }
 
-    error_90 = sqrt(
-        (shield_90_data.uncertainty) ** 2
-        + (unshielded_full_data.uncertainty) ** 2
-    ) 
-    error_180 = sqrt(
-        (shield_180_data.uncertainty) ** 2
-        + (unshielded_full_data.uncertainty) ** 2
-    ) 
-    error_270 = sqrt(
-        (shield_270_data.uncertainty) ** 2
-        + (unshielded_full_data.uncertainty) ** 2
-    ) 
+    if interpolate:
+        unshielded_interpolated_dose = RGI(
+            (x_pos_mid, y_pos_mid, z_pos_mid),
+            unshielded_full_data.dose,
+            bounds_error=False,
+            fill_value=None
+        )
+        shield_90_interpolated_dose = RGI(
+            (x_pos_mid, y_pos_mid, z_pos_mid),
+            shield_90_data.dose,
+            bounds_error=False,
+            fill_value=None
+        )
+        shield_180_interpolated_dose = RGI(
+            (x_pos_mid, y_pos_mid, z_pos_mid),
+            shield_180_data.dose,
+            bounds_error=False,
+            fill_value=None
+        )
+        shield_270_interpolated_dose = RGI(
+            (x_pos_mid, y_pos_mid, z_pos_mid),
+            shield_270_data.dose,
+            bounds_error=False,
+            fill_value=None
+        )
 
-    unshielded_interpolated_dose_matrix = unshielded_full_data.dose
-    shield_90_interpolated_dose_matrix = shield_90_data.dose
-    shield_180_interpolated_dose_matrix = shield_180_data.dose
-    shield_270_interpolated_dose_matrix = shield_270_data.dose
+        points = meshgrid(x_pos, y_pos, z_pos)
+        flat = array([m.flatten() for m in points])
 
-    shield_90_interpolated_dose_matrix /= unshielded_interpolated_dose_matrix
-    shield_180_interpolated_dose_matrix /= unshielded_interpolated_dose_matrix
-    shield_270_interpolated_dose_matrix /= unshielded_interpolated_dose_matrix
+        unshielded_interpolated_dose_matrix = unshielded_interpolated_dose(
+            flat.transpose()
+        ).reshape(*points[0].shape).transpose((1, 0, 2))
+        shield_90_interpolated_dose_matrix = shield_90_interpolated_dose(
+            flat.transpose()
+        ).reshape(*points[0].shape).transpose((1, 0, 2))
+        shield_180_interpolated_dose_matrix = shield_180_interpolated_dose(
+            flat.transpose()
+        ).reshape(*points[0].shape).transpose((1, 0, 2))
+        shield_270_interpolated_dose_matrix = shield_270_interpolated_dose(
+            flat.transpose()
+        ).reshape(*points[0].shape).transpose((1, 0, 2))
 
-    error_90 *= shield_90_data.dose.__abs__()
-    error_180 *= shield_180_data.dose.__abs__()
-    error_270 *= shield_270_data.dose.__abs__()
+        # Don't know how to do the errors for the interpolation so for now
+        # set them to zero
+        error_90 = zeros(shield_90_interpolated_dose_matrix.shape)
+        error_180 = zeros(shield_180_interpolated_dose_matrix.shape)
+        error_270 = zeros(shield_270_interpolated_dose_matrix.shape)
+
+    else:
+
+        error_90 = sqrt(
+            (shield_90_data.uncertainty) ** 2
+            + (unshielded_full_data.uncertainty) ** 2
+        ) 
+        error_180 = sqrt(
+            (shield_180_data.uncertainty) ** 2
+            + (unshielded_full_data.uncertainty) ** 2
+        ) 
+        error_270 = sqrt(
+            (shield_270_data.uncertainty) ** 2
+            + (unshielded_full_data.uncertainty) ** 2
+        ) 
+
+        unshielded_interpolated_dose_matrix = unshielded_full_data.dose
+        shield_90_interpolated_dose_matrix = shield_90_data.dose
+        shield_180_interpolated_dose_matrix = shield_180_data.dose
+        shield_270_interpolated_dose_matrix = shield_270_data.dose
+
+        shield_90_interpolated_dose_matrix /= unshielded_interpolated_dose_matrix
+        shield_180_interpolated_dose_matrix /= unshielded_interpolated_dose_matrix
+        shield_270_interpolated_dose_matrix /= unshielded_interpolated_dose_matrix
+
+        error_90 *= shield_90_data.dose.__abs__()
+        error_180 *= shield_180_data.dose.__abs__()
+        error_270 *= shield_270_data.dose.__abs__()
 
     ax.errorbar(
         x_pos_mid[::3],
@@ -1031,6 +1046,10 @@ def inverse_isodose_plot():
         '2pt0mm'
     ]
 
+    air_kerma_str = 326.05715
+    air_kerma_per_hist = 1.1584e-13
+    max_dwell_time = 0.02917
+
     for fig_index in xrange(len(vox_size_lst)):
 
         fig, ax = subplots(
@@ -1066,7 +1085,10 @@ def inverse_isodose_plot():
 
             Nx, Ny, Nz = full_data.shape
 
-            full_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
+            # scale to maximum individual dwell time
+            full_data.dose *= get_conversion_factor(
+                air_kerma_str, air_kerma_per_hist, max_dwell_time
+            )  
 
             full_data.dose /= 5  # normalize to desired dose of 5 Gy
             full_data.dose *= 100  # express in percent. Should see 100% at x=-2cm
@@ -1217,7 +1239,7 @@ def get_dose_at_points():
 
 if __name__ == "__main__":
     # dose_position_plots()
-    # dose_inv_position_interpolate_plots()
+    dose_inv_position_plots()
     # rel_dose_position_plot()
-    isodose_plot()
+    # isodose_plot()
     # inverse_isodose_plot()
