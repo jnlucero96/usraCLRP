@@ -7,7 +7,8 @@
 from __future__ import division
 
 from os import walk
-from os.path import join
+from pickle import load as pload
+from os.path import join, isfile
 from dicom import read_file
 
 
@@ -96,7 +97,7 @@ def process_RT(file_path, scale_dose):
 
     return final_seed_locations, DSF
 
-def process_CONTOUR(file_path):
+def process_CONTOUR(file_path, SIZE_OF_GRID):
 
     root_dir, __, filenames = walk(file_path).next()
     
@@ -150,7 +151,7 @@ def process_CONTOUR(file_path):
         else:
             pass
 
-    if ROI_PTV == -1:
+    if ROI_PTV == -1:  # these cases are misnamed. Catch them.
         for relevant_index, roi_gen in enumerate(structure_names):
             ROI = roi_gen.lower()
             if ROI in ('etv 1.0', 'ctv'):
@@ -164,5 +165,71 @@ def process_CONTOUR(file_path):
             else: 
                 pass
 
+    if ROI_LUNG == -1:
+        print "*"*10 + "WARNING: Could not find Lung Structure" + "*"*10
+    if ROI_HEART == -1:
+        print "*"*10 + "WARNING: Could not find Heart Structure" + "*"*10
+    if ROI_SKIN_MARGIN == -1:
+        print "*"*10 + "WARNING: Could not find Skin Structure" + "*"*10
+    if ROI_PTV == -1:
+        print "*"*10 + "WARNING: Could not find PTV Structure" + "*"*10
+    if ROI_CTV == -1:
+        print "*"*10 + "WARNING: Could not find CTV Structure" + "*"*10
+    if ROI_SKIN == -1:
+        print "*"*10 + "WARNING: Could not find Skin Structure" + "*"*10
+    if ROI_SKIN_SURFACE == -1:
+        print "*"*10 + "WARNING: Could not find Skin Surface Structure" + "*"*10
 
+    cont_map = [
+        [
+            [] for __ in xrange(SIZE_OF_GRID[2])
+        ] for __ in xrange(0, len(rt.ROIContourSequence))
+    ]
 
+    for index in xrange(len(cont_map)):
+
+        if index == ROI_HEART:
+            if isfile(file_path + 'heart_contour.txt'):
+                with open(file_path + 'heart_contour.txt', 'rb') as heart_file:
+                    cont_map[index] = pload(heart_file)
+            else:
+                print "No heart contour"
+        elif index == ROI_LUNG:
+            if isfile(file_path + 'lung_contour.txt'):
+                with open(file_path + 'lung_contour.txt', 'rb') as lung_file:
+                    cont_map[index] = pload(lung_file)
+            else:
+                print "No lung contour"
+        elif index == ROI_BREAST:
+            if isfile(file_path + 'breast_contour.txt'):
+                with open(
+                    file_path + 'breast_contour.txt', 'rb'
+                    ) as breast_file:
+                    cont_map[index] = pload(breast_file)
+            else:
+                print "No breast contour"
+        elif index == ROI_SKIN:
+            if isfile(file_path + 'skin_skin_contour.txt'):
+                with open(
+                    file_path + 'skin_skin_contour.txt', 'rb'
+                    ) as skin_skin_file:
+                    cont_map[index] = pload(skin_skin_file)
+            else:
+                print "No Actual Skin Contour"
+        elif index == ROI_RIBS:
+            if isfile(file_path + 'ribs_contour.txt'):
+                with open(file_path + 'ribs_contour.txt', 'rb') as ribs_file:
+                    cont_map[index] = pload(ribs_file)
+        elif index == ROI_CHEST_WALL:
+            if isfile(file_path + 'chest_wall_contour.txt'):
+                with open(
+                    file_path + 'chest_wall_contour.txt', 'rb'
+                    ) as chest_wall_file:
+                    cont_map[index] = pload(chest_wall_file)
+            else:
+                print "No chest wall contour"
+        else:
+            for index2 in xrange(SIZE_OF_GRID[2]):
+                cont_map[index][index2] = False
+        
+    print "\r" + " Finished ROI # %s" % str(index)

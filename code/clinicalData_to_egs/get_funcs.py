@@ -6,7 +6,9 @@
 from __future__ import division
 
 from os import getcwd
-from os.path import isdir
+from os.path import isdir, exists
+
+from numpy import loadtxt
 
 from dicom import read_file
 
@@ -57,11 +59,11 @@ def get_target_dir():
             print "That is not a valid path to a directory."
             answer = raw_input(
                 "Should we set the current working directory as path? [y/n] :>>"
-            )
-            if answer.lower() is 'y':
+                )
+            if answer.lower() in ('y', 'yes'):
                 target_dir = getcwd()
                 break
-            elif answer.lower() is 'n':
+            elif answer.lower() in ('n', 'no'):
                 continue
             else:
                 print "Input not understood."
@@ -70,7 +72,6 @@ def get_target_dir():
             break
 
     return target_dir
-
 
 def get_ref_info_from_ref_slice(ref_file_1, ref_file_2, num_CT_files):
     ref_1 = read_file(ref_file_1)
@@ -142,3 +143,26 @@ def get_ref_info_from_ref_slice(ref_file_1, ref_file_2, num_CT_files):
         "BOUNDS": (XBOUNDS, YBOUNDS, ZBOUNDS),
         "VOXEL_CENTERS": VOXEL_CENTERS
     }
+
+def get_CT_calibration():
+    """
+    Description:
+    
+    Inputs:
+
+    Outputs:
+    """
+    
+    while True:
+        path_to_calibration = raw_input(
+            "Please input the FULL file path to the CT calibration curve:>> "
+        )
+        if not exists(path_to_calibration):
+            print \
+            "This is not a valid file path to an existing calibration file." + \
+            " Please specify a correct path."
+        else:
+            break
+
+    HU, mass_density = loadtxt(path_to_calibration,unpack=True)
+

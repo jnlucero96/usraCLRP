@@ -9,6 +9,8 @@ from os.path import exists
 from glob import glob
 from numpy import array, empty
 
+from get_funcs import get_target_dir()
+
 def load_phantom(patientID, label, p_width):
     """
     Description: 
@@ -33,6 +35,7 @@ def load_phantom(patientID, label, p_width):
     p_data = []
     comp_data = []
     tissue_names = empty(p_width, dtype=int)
+    target_dir = get_target_dir()
 
     while True:
         phantom_filename = raw_input(
@@ -63,3 +66,24 @@ def load_phantom(patientID, label, p_width):
 
     return tissue_names, comp_data
             
+def create_EGSPhant():
+
+    """
+    Description: 
+    Script to create EGSPhant files from CT files given a specific 
+    CT calibration curve.
+
+    Inputs:
+    :param :
+    :type :
+
+    Outputs:
+    :param :
+    :type :
+    """
+
+    print "\n\n" + "*"*50
+    print "Attempting to create egsphant files..."
+    print "*"*50
+
+    
