@@ -44,7 +44,7 @@ def process_CT(file_path):
     return ordered_CT_lst, slice_array_lst
 
 
-def process_RT(file_path, scale_dose):
+def process_RP(file_path, scale_dose):
 
     ###########################################################################
     ########
@@ -67,33 +67,31 @@ def process_RT(file_path, scale_dose):
     try:
         air_kerma = float(rp.SourceSequence[0].ReferenceAirKermaRate)
         print 'Air Kerma =', air_kerma
-    except:
+    except (NameError, AttributeError):
         print "No Air Kerma found for Patient {0}.".format(rp.PatientID)
         scale_dose = False  # without air kerma cannot scale dose
 
     # define dose scaling factor (DSF)
     if scale_dose:
-        try:
-            # what is this hard coded number? for what source?
-            DSF = 91558000000000 * air_kerma
-        except NameError:
-            print "No air kerma info --> Cannot scale dose."
+        # what is this hard coded number? for what source?
+        # from Stephen this is for Pd-103
+        DSF = 91558000000000 * air_kerma
     else:
-        DSF = 1
-        print "Not scaling dose according to user preference."
+        DSF = 1.0
+        print "Dose remains unscaled."
 
     try:
         # get final list of seed locations
         final_seed_locations = [
             [
-                float(seed_info.ChannelSequence[0].
-                      BrachyControlPointSequence[1].ControlPoint3DPosition[i])
+                float(
+                    seed_info.ChannelSequence[0].BrachyControlPointSequence[1].ControlPoint3DPosition[i])
                 for i in xrange(0, 3)
             ] for __, seed_info in enumerate(rp.ApplicationSetupSequence)
         ]
         print "Seed locations found."
     except:
-        print "No seed locations found for Patient {0}.".format(rp.PatientID)
+        print "No seed locations."
 
     return final_seed_locations, DSF
 

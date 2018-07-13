@@ -413,9 +413,7 @@ for PatientNumber in PatientNumbers:
     Yellow_Marrow_Cutoff_HU = np.interp(Yellow_Marrow_Cutoff_Den, SD_y, SD_x)
     print('Low Artifact Cutoff HU = ' + str(Yellow_Marrow_Cutoff_Den))
 
-
-
-    Media = ['AIR_TG43','MUSCLE2_WW86','CARTILAGE_WW86', 'SKIN2_WW86', 'GLAND2_WW86', 'ADIPOSE2_WW86','HEART_BLOODFILLED_WW86', 'LUNG_BLOODFILLED_WW86', 'CORTICAL_BONE_WW86','YELLOW_MARROW_WW86','RED_MARROW_WW86','CALCIFICATION_ICRU46']
+    Media = ['AIR_TG43','MUSCLE2_WW86','CARTILAGE_WW86', 'SKIN2_WW86', 'GLAND2_WW86', 'ADIPOSE2_WW86', 'HEART_BLOODFILLED_WW86', 'LUNG_BLOODFILLED_WW86', 'CORTICAL_BONE_WW86','YELLOW_MARROW_WW86','RED_MARROW_WW86','CALCIFICATION_ICRU46']
 
     # Opening File
     phantpath = inputpath = './EGSphants/%s/Br_%s_Pt_%s.egsphant' % (Name_String, Name_String, str(PatientNumber))
@@ -499,7 +497,7 @@ for PatientNumber in PatientNumbers:
                 ## ADD RIBS and CHEST WALL CONTOURS TO AVOID SKIN ASSIGNMENT!?!
 
                 if contmap[roi_lung][z][x + y * Size_of_Grid[0]]:
-                    if ct_value < -400:
+                    if ct_value < -400: # -400 is a HU 
                         egsphant.write(str(Media.index('AIR_TG43') + 1))
                     else:
                         egsphant.write(str(Media.index('LUNG_BLOODFILLED_WW86') + 1))

@@ -8,7 +8,7 @@ from __future__ import division
 from os import getcwd
 from os.path import isdir, exists
 
-from numpy import loadtxt
+from numpy import loadtxt, genfromtxt
 
 from dicom import read_file
 
@@ -51,9 +51,8 @@ def get_defaults():
 def get_target_dir():
     while True:
         target_dir = raw_input(
-            """
-            Please input path to directory in which all relevant files are stored :>> 
-            """
+        "Please input path to directory in which all relevant files are " + \
+        "stored :>> """
         )
         if not isdir(target_dir):
             print "That is not a valid path to a directory."
@@ -74,6 +73,14 @@ def get_target_dir():
     return target_dir
 
 def get_ref_info_from_ref_slice(ref_file_1, ref_file_2, num_CT_files):
+
+    """
+    Description:
+
+    Inputs:
+
+    Outputs:
+    """
     ref_1 = read_file(ref_file_1)
     ref_2 = read_file(ref_file_2)
     SLICE_THICKNESS = float(ref_2.SliceLocation - ref_1.SliceLocation)
@@ -144,7 +151,7 @@ def get_ref_info_from_ref_slice(ref_file_1, ref_file_2, num_CT_files):
         "VOXEL_CENTERS": VOXEL_CENTERS
     }
 
-def get_CT_calibration():
+def get_CT_calibration(path_to_calibration=None):
     """
     Description:
     
@@ -153,16 +160,41 @@ def get_CT_calibration():
     Outputs:
     """
     
-    while True:
-        path_to_calibration = raw_input(
-            "Please input the FULL file path to the CT calibration curve:>> "
-        )
-        if not exists(path_to_calibration):
-            print \
-            "This is not a valid file path to an existing calibration file." + \
-            " Please specify a correct path."
-        else:
-            break
+    if not path_to_calibration:
+        while True:
+            path_to_calibration = raw_input(
+                "Please input the FULL file path to the CT calibration curve:>> "
+            )
+            if not exists(path_to_calibration):
+                print \
+                "This is not a valid file path to an existing calibration file." + \
+                " Please specify a correct path."
+            else:
+                break
 
     HU, mass_density = loadtxt(path_to_calibration,unpack=True)
+
+    return HU, mass_density
+
+def get_media(path_to_media=None):
+
+    if not path_to_media:
+        while True:
+            path_to_media = raw_input(
+                "Please input the FULL file path to the media definitions file curve:>> "
+            )
+            if not exists(path_to_media):
+                print \
+                    "This is not a valid file path to an existing calibration file." + \
+                    " Please specify a correct path."
+            else:
+                break
+
+    [
+        media_name, media_HU, media_density, PEGS4_name, HU_min, HU_max
+        ] = genfromtxt(path_to_media, unpack=True)
+
+    return media_name, media_HU, media_density, PEGS4_name, HU_min, HU_max
+
+
 

@@ -12,6 +12,7 @@ from os import getcwd
 from numpy import linspace, zeros_like, histogram, arange, array
 from py3ddose import DoseFile, position_to_index
 
+from matplotlib.colors import Normalize
 from matplotlib.cm import get_cmap
 from matplotlib.style import use
 use('seaborn-paper')
@@ -333,10 +334,7 @@ def isodose_plot():
     # source = 'V2-FlexiCompare'
     # source = 'V1-FlexiCompare'
     source = 'V2-V1Compare'
-    # sup_title = 'Flexisource to microSelectron-v2\n Dose Comparison'
-    # sup_title = 'Flexisource to microSelectron-v1\n Dose Comparison'
-    sup_title = 'microSelectron-v1 to microSelectron-v2\n Dose Comparison'
-
+    
     mSV2_data = DoseFile(
         target_dir + '/tg43_microSelectronV2_2mm.phantom_wo_box.3ddose'
     )
@@ -347,7 +345,38 @@ def isodose_plot():
         target_dir + '/tg43_Flexisource_2mm.phantom_wo_box.3ddose'
         )
 
-    comparison_matrix = calc_per_diff(mSV2_data.dose, mSV1_data.dose)
+    if source is 'V2-V1Compare':
+        print "Source is:", source
+        mSV2_data = DoseFile(
+            target_dir + '/tg43_microSelectronV2_2mm.phantom_wo_box.3ddose'
+        )
+        mSV1_data = DoseFile(
+            target_dir + '/tg43_microSelectronV1_2mm.phantom_wo_box.3ddose'
+        )
+        comparison_matrix = calc_per_diff(mSV2_data.dose, mSV1_data.dose)
+        sup_title = 'microSelectron-v1 to microSelectron-v2\n Dose Comparison'
+    elif source is 'V1-FlexiCompare':
+        print "Source is:", source
+        flexi_data = DoseFile(
+            target_dir + '/tg43_Flexisource_2mm.phantom_wo_box.3ddose'
+        )
+        mSV1_data = DoseFile(
+            target_dir + '/tg43_microSelectronV1_2mm.phantom_wo_box.3ddose'
+        )
+        comparison_matrix = calc_per_diff(mSV1_data.dose, flexi_data.dose)
+        sup_title = 'Flexisource to microSelectron-v1\n Dose Comparison'
+    elif source is 'V2-FlexiCompare':
+        print "Source is:", source
+        mSV1_data = DoseFile(
+            target_dir + '/tg43_microSelectronV1_2mm.phantom_wo_box.3ddose'
+        )
+        mSV2_data = DoseFile(
+            target_dir + '/tg43_microSelectronV2_2mm.phantom_wo_box.3ddose'
+        )
+        comparison_matrix = calc_per_diff(mSV2_data.dose, flexi_data.dose)
+        sup_title = 'Flexisource to microSelectron-v2\n Dose Comparison'
+    else:
+        print "Prompt not understood.", exit(1)
     
     Nx, Ny, Nz = mSV2_data.shape
 
@@ -367,14 +396,14 @@ def isodose_plot():
     y_pos = array(mSV2_data.positions[1])
     z_pos = array(mSV2_data.positions[2])
 
-    x_pos_mid = (x_pos[1:] + x_pos[:-1]) / 2.0
-    y_pos_mid = (y_pos[1:] + y_pos[:-1]) / 2.0
-    z_pos_mid = (z_pos[1:] + z_pos[:-1]) / 2.0
+    x_pos_mid = (x_pos[:-1] + x_pos[1:]) / 2.0
+    y_pos_mid = (y_pos[:-1] + y_pos[1:]) / 2.0
+    z_pos_mid = (z_pos[:-1] + z_pos[1:]) / 2.0
 
     xy_contour = ax.contourf(
         x_pos_mid, y_pos_mid, 
         comparison_matrix[:,:,position_to_index(0.0,z_pos_mid)].transpose(),
-        # arange(0, 110, 10),
+        arange(0, 14.5, 0.5),
         # [5, 10, 20, 50, 100]
         # cmap=get_cmap('Purples')
     )
@@ -383,7 +412,7 @@ def isodose_plot():
     xz_contour = ax2.contourf(
         x_pos_mid, z_pos_mid, 
         comparison_matrix[:, position_to_index(0.0, y_pos_mid), :].transpose(),
-        # arange(0, 110, 10),
+        arange(0, 14.5, 0.5),
         # [5, 10, 20, 50, 100]
         # cmap=get_cmap('Purples')
     )
@@ -421,12 +450,13 @@ def isodose_plot():
         fontsize=27, va='center', ha='center'
     )
 
-    cax = fig.add_axes([0.91, 0.13, 0.01, 0.7])
+    cax = fig.add_axes([0.91, 0.09, 0.01, 0.79])
     cbar1 = fig.colorbar(
         xy_contour, cax=cax, orientation='vertical',
-        ax=ax
+        ax=ax, ticks=arange(0,15,1)
     )
     cbar1.set_label('Percentage Difference (%)', fontsize=24)
+    
     cbar1.ax.tick_params(labelsize=14)
     fig.tight_layout()
 
@@ -455,10 +485,10 @@ def isodose_plot():
         sup_title,
         fontsize=27, va='center', ha='center'
     )
-    cax2 = fig2.add_axes([0.90, 0.13, 0.01, 0.7])
+    cax2 = fig2.add_axes([0.90, 0.09, 0.01, 0.79])
     cbar2 = fig2.colorbar(
         xz_contour, cax=cax2, orientation='vertical',
-        ax=ax2
+        ax=ax2, ticks=arange(0,15,1)
     )
     cbar2.set_label('Percentage Difference (%)', fontsize=24)
     # cbar2.set_clim([0, 100])
