@@ -5,8 +5,8 @@
 
 
 def perform_metallic_artifact_reduction(
-    seed_locations, slice_array, bounds, voxel_size, voxel_centers, intercept,
-    size_of_grid
+    seed_locations, slice_lst_array, BOUNDS, VOXEL_DIMS, VOXEL_CENTERS,
+    INTERCEPT, SIZE_OF_GRID
 ):
 
     print
@@ -22,44 +22,42 @@ def perform_metallic_artifact_reduction(
     cyl_max_radius = 0.5  # why is there a cylinder defined?
     mar_counter = 0
 
-    x_bounds, y_bounds, z_bounds = bounds
+    x_bounds, y_bounds, z_bounds = BOUNDS
 
     for seed in seed_locations:
-        z_pos = int((seed[2] - (10 * z_bounds[0])) // voxel_size[2])
-        for index, center in enumerate(voxel_centers):
-            x_displacement = abs(
-                center[0] - (seed[0] / 10)) - 0.05 * voxel_size
-            y_displacement = abs(
-                center[0] - (seed[0] / 10)) - 0.05 * voxel_size
+        z_pos = int((seed[2] - (10 * z_bounds[0])) // VOXEL_DIMS[2])
+        for index, center in enumerate(VOXEL_CENTERS):
+            x_displacement = abs(center[0] - (seed[0] / 10)) - 0.05 * VOXEL_DIMS
+            y_displacement = abs(center[0] - (seed[0] / 10)) - 0.05 * VOXEL_DIMS
 
             if (x_displacement**2 + y_displacement**2) < cyl_max_radius**2:
-                x_pos = index % size_of_grid[0]
-                y_pos = index // size_of_grid[0]
+                x_pos = index % SIZE_OF_GRID[0]
+                y_pos = index // SIZE_OF_GRID[0]
 
                 # This indexing is inefficient...
                 # Could we possibly turn this into a numpy array without
                 # too much trouble?
-                if slice_array[z_pos+2][y_pos][x_pos] + intercept > cutoff:
+                if slice_lst_array[z_pos+2][y_pos][x_pos] + INTERCEPT > cutoff:
                     mar_counter += 1
-                    slice_array[z_pos+2][y_pos][x_pos] = replace - intercept
+                    slice_lst_array[z_pos+2][y_pos][x_pos] = replace - INTERCEPT
 
-                if slice_array[z_pos+1][y_pos][x_pos] + intercept > cutoff:
+                if slice_lst_array[z_pos+1][y_pos][x_pos] + INTERCEPT > cutoff:
                     mar_counter += 1
-                    slice_array[z_pos+1][y_pos][x_pos] = replace - intercept
+                    slice_lst_array[z_pos+1][y_pos][x_pos] = replace - INTERCEPT
 
-                if slice_array[z_pos][y_pos][x_pos] + intercept > cutoff:
+                if slice_lst_array[z_pos][y_pos][x_pos] + INTERCEPT > cutoff:
                     mar_counter += 1
-                    slice_array[z_pos][y_pos][x_pos] = replace - intercept
+                    slice_lst_array[z_pos][y_pos][x_pos] = replace - INTERCEPT
 
-                if slice_array[z_pos+1][y_pos][x_pos] + intercept > cutoff:
+                if slice_lst_array[z_pos+1][y_pos][x_pos] + INTERCEPT > cutoff:
                     mar_counter += 1
-                    slice_array[z_pos+1][y_pos][x_pos] = replace - intercept
+                    slice_lst_array[z_pos+1][y_pos][x_pos] = replace - INTERCEPT
 
-                if slice_array[z_pos+2][y_pos][x_pos] + intercept > cutoff:
+                if slice_lst_array[z_pos+2][y_pos][x_pos] + INTERCEPT > cutoff:
                     mar_counter += 1
-                    slice_array[z_pos+2][y_pos][x_pos] = replace - intercept
+                    slice_lst_array[z_pos+2][y_pos][x_pos] = replace - INTERCEPT
 
     print "Metallic Artifact Reduction complete. {0} high density voxels \
     replaced".format(mar_counter)
 
-    return slice_array
+    return slice_lst_array

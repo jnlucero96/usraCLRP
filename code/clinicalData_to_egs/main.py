@@ -14,42 +14,53 @@ from time import time
 from datetime import date
 from copy import deepcopy
 
-# load external module functions
-from dicom import read_file
-from numpy import interp
-
 # load self-made modules
-from process import process_CT, process_RP
-from get_funcs import get_target_dir
+from process import process_CT, process_RP, process_RS
+from get_funcs import get_target_dir, get_ref_info_from_ref_slice
+from file_functions import create_EGSPhant
 from special_funcs import perform_metallic_artifact_reduction as MAR
 
-def main(scale_dose=False):
+def main(egsphant_create=True, scale_dose=False, run_metallic_reduction=False):
 
-    """
+    """\
     Description:
 
     Inputs:
 
-    Outputs:
+    Outputs:\
     """
 
-    target_dir = get_target_dir()
+    root_dir = get_target_dir()
+    cwd = getcwd()
+    egsphant_name = str(raw_input(
+        "Please input the base name of the egsphant:>> "
+    ))
     
-    full_file_path = join(target_dir, listdir(target_dir)[0]) + '/'
-    dir_sort = listdir(target_dir)
-
-    for current_dir in dir_sort:
-        if 'CT' in current_dir:
-            file_path_CT = full_file_path + current_dir + '/'
-        elif 'RP' in current_dir:
-            file_path_RT = target_dir + current_dir + '/'
-        elif 'RT' in current_dir:
-            file_path_CONTOUR = target_dir + current_dir + '/'
-
-    ordered_CT_lst, slice_array_lst = process_CT(target_dir)
-
-    print ordered_CT_lst, slice_array_lst
-
+    ordered_CT_lst, slice_array_lst, num_CT_files = process_CT(root_dir)
+    final_seed_locations, DSF = process_RP(root_dir, scale_dose)
+    reference_dict = get_ref_info_from_ref_slice(
+        *ordered_CT_lst[:2], num_CT_files=num_CT_files
+    )
+    cont_map = process_RS(root_dir, reference_dict["SIZE OF GRID"])
     
+    if run_metallic_reduction:
+        slice_array_lst = MAR(
+            final_seed_locations, slice_array_lst, reference_dict["BOUNDS"],
+            reference_dict["VOXEL DIMS"], reference_dict["VOXEL CENTERS"], 
+            reference_dict["INTERCEPT"], reference_dict["SIZE OF GRID"]
+            )
+
+    if egsphant_create:
+        create_EGSPhant(
+            slice_array_lst=slice_array_lst, 
+            ref_intercept=reference_dict["INTERCEPT"], 
+            SIZE_OF_GRID=reference_dict["SIZE OF GRID"], 
+            bounds=reference_dict["BOUNDS"],
+            path_to_calibration='default',
+            path_to_media='default',
+            path_to_egsphants=None,
+            egsphant_name=egsphant_name
+        )
+
 if __name__ == "__main__":
     main()

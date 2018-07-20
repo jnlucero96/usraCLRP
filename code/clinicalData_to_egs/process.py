@@ -7,12 +7,13 @@
 from __future__ import division
 
 from os import walk
+from glob import glob
 from pickle import load as pload
-from os.path import join, isfile
-from dicom import read_file
+from os.path import join, isfile, expanduser
+from pydicom import dcmread
 
 
-def process_CT(file_path):
+def process_CT(root_dir):
 
     ###########################################################################
     ########
@@ -20,31 +21,37 @@ def process_CT(file_path):
     ########
     ###########################################################################
 
+    print '\n\n' + '=' * 50
     print "Now importing and arranging CT data"
     print '=' * 50
 
     # extract the CT filenames in the target directory
-    (__, __, filename_CT_lst) = walk(file_path).next()
+    filename_CT_lst = glob(join(root_dir, 'CT*.dcm'))
 
-    sort_dcm = [
+    # for CT_file in filename_CT_lst:
+    #     print CT_file, dcmread(CT_file).SliceLocation
+
+    sorted_dcm = sorted([
         (
-            read_file(file_path + CT_file).Slicelocation,
-            file_path + CT_file
-        ) for CT_file in filename_CT_lst
-    ].sort()  # sort the dcm files from inferior (-) to superior (+)
+            dcmread(CT_file).SliceLocation,
+            CT_file
+        ) for CT_file in filename_CT_lst 
+    ])  # load in the files
 
+    # sort the dcm files from inferior (-) to superior (+) and
+    # extract the ordered CT Dicom files    
     ordered_CT_lst = [
-        item[1] for item in sort_dcm
-    ]  # extract the ordered CT Dicom files
+        item[1] for item in sorted_dcm
+    ]
 
     slice_array_lst = [
-        read_file(current_CT).pixel_array for current_CT in ordered_CT_lst
+        dcmread(current_CT).pixel_array for current_CT in ordered_CT_lst
     ]  # slice array list indexing goes [z][y][x]
 
-    return ordered_CT_lst, slice_array_lst
+    return ordered_CT_lst, slice_array_lst, len(ordered_CT_lst)
 
 
-def process_RP(file_path, scale_dose):
+def process_RP(root_dir, scale_dose=False):
 
     ###########################################################################
     ########
@@ -53,13 +60,23 @@ def process_RP(file_path, scale_dose):
     ###########################################################################
 
     # extract the filenames in the RT directory
-    root_dir, __, filename_lst = walk(file_path).next()
+    filename_RP_lst = glob(join(root_dir, 'RP*.dcm')); answer = 0 
 
-    for filename in filename_lst:
-        if 'RTPLAN' and 'dcm' in join(root_dir, filename):
-            current_plan_file = join(root_dir, filename)
+    num_RP_files = len(filename_RP_lst)
 
-    rp = read_file(current_plan_file)
+    # there should only be a unique RT (RP) plan file for a CT directory.
+    # this covers the cases when user has more than one in the directory 
+    if num_RP_files > 1:
+        print "There is more than one RT plan in this directory:"
+        for index, file_name in enumerate(filename_RP_lst):
+            print str(index) + ": " + file_name
+        answer = int(raw_input(
+            "Which of the {0} files do you wish to use as the plan file? Please input in the index [int]:>> ".format(index + 1)
+        ))
+
+    current_plan_file = filename_RP_lst[answer]
+
+    rp = dcmread(current_plan_file)
     print "Now finding treatement plan info. for Patient {0}.".format(
         rp.PatientID
     )
@@ -95,22 +112,31 @@ def process_RP(file_path, scale_dose):
 
     return final_seed_locations, DSF
 
-def process_CONTOUR(file_path, SIZE_OF_GRID):
+def process_RS(root_dir, SIZE_OF_GRID):
 
-    root_dir, __, filenames = walk(file_path).next()
+    # glob the contour files in the directory
+    contour_files = glob(join(root_dir, 'RS*.dcm')); answer = 0
+
+    num_RS_files = len(contour_files)
     
-    for file_name in filenames:
-        if 'RTst' and 'dcm' in join(root_dir, file_name):
-            current_contour_file = join(root_dir, file_name)
+    # there should only be a unique contour (RS) file for a CT directory.
+    # this covers the cases when user has more than one in the directory
+    if num_RS_files > 1:
+        print "There is more than one RS plan in this directory:"
+        for index, file_name in enumerate(contour_files):
+            print str(index) + ": " + file_name
+        answer = int(raw_input(
+            "Which of the {0} files do you wish to use as the plan file? Please input in the index [int]:>> ".format(
+                index + 1)
+        ))
 
-    rt = read_file(current_contour_file)
+    current_contour_file = contour_files[answer]
+
+    rt = dcmread(current_contour_file)
 
     structure_names = [
-        name.ROI_name for name in rt.StructureSetROISequeunce
+        name.ROIName for name in rt.StructureSetROISequence
     ]
-
-    print "Structures Found: "
-    print structure_names
 
     ROI_LUNG = -1
     ROI_HEART = -1 
@@ -187,41 +213,41 @@ def process_CONTOUR(file_path, SIZE_OF_GRID):
     for index in xrange(len(cont_map)):
 
         if index == ROI_HEART:
-            if isfile(file_path + 'heart_contour.txt'):
-                with open(file_path + 'heart_contour.txt', 'rb') as heart_file:
+            if isfile(root_dir + 'heart_contour.txt'):
+                with open(root_dir + 'heart_contour.txt', 'rb') as heart_file:
                     cont_map[index] = pload(heart_file)
             else:
                 print "No heart contour"
         elif index == ROI_LUNG:
-            if isfile(file_path + 'lung_contour.txt'):
-                with open(file_path + 'lung_contour.txt', 'rb') as lung_file:
+            if isfile(root_dir + 'lung_contour.txt'):
+                with open(root_dir + 'lung_contour.txt', 'rb') as lung_file:
                     cont_map[index] = pload(lung_file)
             else:
                 print "No lung contour"
         elif index == ROI_BREAST:
-            if isfile(file_path + 'breast_contour.txt'):
+            if isfile(root_dir + 'breast_contour.txt'):
                 with open(
-                    file_path + 'breast_contour.txt', 'rb'
+                    root_dir + 'breast_contour.txt', 'rb'
                     ) as breast_file:
                     cont_map[index] = pload(breast_file)
             else:
                 print "No breast contour"
         elif index == ROI_SKIN:
-            if isfile(file_path + 'skin_skin_contour.txt'):
+            if isfile(root_dir + 'skin_skin_contour.txt'):
                 with open(
-                    file_path + 'skin_skin_contour.txt', 'rb'
+                    root_dir + 'skin_skin_contour.txt', 'rb'
                     ) as skin_skin_file:
                     cont_map[index] = pload(skin_skin_file)
             else:
                 print "No Actual Skin Contour"
         elif index == ROI_RIBS:
-            if isfile(file_path + 'ribs_contour.txt'):
-                with open(file_path + 'ribs_contour.txt', 'rb') as ribs_file:
+            if isfile(root_dir + 'ribs_contour.txt'):
+                with open(root_dir + 'ribs_contour.txt', 'rb') as ribs_file:
                     cont_map[index] = pload(ribs_file)
         elif index == ROI_CHEST_WALL:
-            if isfile(file_path + 'chest_wall_contour.txt'):
+            if isfile(root_dir + 'chest_wall_contour.txt'):
                 with open(
-                    file_path + 'chest_wall_contour.txt', 'rb'
+                    root_dir + 'chest_wall_contour.txt', 'rb'
                     ) as chest_wall_file:
                     cont_map[index] = pload(chest_wall_file)
             else:
@@ -230,4 +256,6 @@ def process_CONTOUR(file_path, SIZE_OF_GRID):
             for index2 in xrange(SIZE_OF_GRID[2]):
                 cont_map[index][index2] = False
         
-    print "\r" + " Finished ROI # %s" % str(index)
+    print "\r" + " Finished ROI # {0}".format(index)
+
+    return cont_map
