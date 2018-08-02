@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env python3
 # author: Joseph Lucero
 # created on: 28 June 2018 17:49:24
 # purpose: functions that acquire information 
@@ -15,51 +15,24 @@ from pandas import read_csv
 
 from pydicom import dcmread
 
+def get_target_dir():
 
-def get_defaults():
-    """
+    """\
     Description:
-    Define some default settings that are needed for the code.
-    Return settings in a dict that is accessible to the user
 
     Inputs:
-    None
 
     Outputs:
     """
 
-    NAME_STRING = "AF_FINAL"
-    NUM_OF_HISTORIES = "1E9"
-    AG_CUTOFF_DEN = 0.985
-    CALC_CUTOFF_DEN = 1.16
-    BONE_CUTOFF_DEN = 1.16
-    LOW_ARTIFACT_CUTOFF_DEN = 1.066
-    CARTILAGE_CUTOFF_DEN = 1.066
-    YELLOW_MARROW_CUTOFF_DEN = 1.005
-    RED_MARROW_CUTOFF_DEN = 1.055
-    INDIVIDUALIZATION = False
-
-    return {
-        "NAME_STRING": NAME_STRING, "NUM_OF_HISTORIES": NUM_OF_HISTORIES,
-        "AG_CUTOFF_DEN": AG_CUTOFF_DEN, "CALC_CUTOFF_DEN": CALC_CUTOFF_DEN,
-        "BONE_CUTOFF_DEN": BONE_CUTOFF_DEN,
-        "LOW_ARTIFACT_CUTOFF_DEN": LOW_ARTIFACT_CUTOFF_DEN,
-        "CARTILAGE_CUTOFF_DEN": CARTILAGE_CUTOFF_DEN,
-        "YELLOW_MARROW_CUTOFF_DEN": YELLOW_MARROW_CUTOFF_DEN,
-        "RED_MARROW_CUTOFF_DEN": RED_MARROW_CUTOFF_DEN,
-        "INDIVIDUALIZATION": INDIVIDUALIZATION
-    }
-
-
-def get_target_dir():
     while True:
-        target_dir = expanduser(raw_input(
+        target_dir = expanduser(input(
         "Please input path to directory in which all relevant files are " + \
         "stored :>> """
         ))
         if not isdir(target_dir):
-            print "That is not a valid path to a directory."
-            answer = raw_input(
+            print("That is not a valid path to a directory.")
+            answer = input(
                 "Should we set the current working directory as path? [y/n] :>>"
                 )
             if answer.lower() in ('y', 'yes'):
@@ -68,7 +41,7 @@ def get_target_dir():
             elif answer.lower() in ('n', 'no'):
                 continue
             else:
-                print "Input not understood."
+                print("Input not understood.")
                 continue
         else:
             break
@@ -79,10 +52,28 @@ def get_ref_info_from_ref_slice(ref_file_1, ref_file_2, num_CT_files):
 
     """\
     Description:
+    Acquire the necessary reference info that is to be used to create the 
+    egsphant from the CT image
 
     Inputs:
+    :param ref_file_1: First reference file path (default lowest inferior CT file) 
+    :type ref_file_1: string
+    :param ref_file_2: Second reference file path (default second lowest inferior CT file)
+    :type ref_file_2: string
+    :param num_CT_files: Total number of CT files
+    :type num_CT_files: int
 
-    Outputs:\
+    Outputs:
+    :param reference_dict: dictionary of reference information
+        "SLICE THICKNESS" : Distance between each CT image
+        "START OF GRID" : The lowest leftmost point in the most inferior CT image
+        "SIZE OF GRID" : Number of voxels in x, y, and z
+        "VOXEL DIMS" : Dimensions of voxels
+        "INTERCEPT" : Intercept that is applied to the CT images reshift to appropriate values
+        "SCALING" : ??? (Not sure what this does)
+        "BOUNDS" : Coordinates of voxel boundaries
+        "VOXEL CENTERS" : Location of the voxel ceneters 
+    :type reference_dict: dict\
     """
     ref_1 = dcmread(ref_file_1, force=True)
     ref_2 = dcmread(ref_file_2, force=True)
@@ -122,8 +113,8 @@ def get_ref_info_from_ref_slice(ref_file_1, ref_file_2, num_CT_files):
     INTERCEPT = float(ref_1.RescaleIntercept)
     SCALING = float(ref_1.RescaleSlope)
 
-    print "Size of grid:", SIZE_OF_GRID
-    print "Voxel dimensions:", VOXEL_DIMS
+    print("Size of grid:", SIZE_OF_GRID)
+    print("Voxel dimensions:", VOXEL_DIMS)
 
     # Get voxel bounds
     XBOUNDS, YBOUNDS, ZBOUNDS = [], [], []  # initialize the lists
@@ -132,16 +123,16 @@ def get_ref_info_from_ref_slice(ref_file_1, ref_file_2, num_CT_files):
     YBOUNDS.append((START_OF_GRID[1] - (0.5 * VOXEL_DIMS[1])) / 10)
     ZBOUNDS.append((START_OF_GRID[2] - (0.5 * VOXEL_DIMS[2])) / 10)
 
-    for i in xrange(SIZE_OF_GRID[0]):
+    for i in range(SIZE_OF_GRID[0]):
         XBOUNDS.append(XBOUNDS[i] + (VOXEL_DIMS[0] / 10))
-    for j in xrange(SIZE_OF_GRID[1]):
+    for j in range(SIZE_OF_GRID[1]):
         YBOUNDS.append(YBOUNDS[j] + (VOXEL_DIMS[1] / 10))
-    for k in xrange(SIZE_OF_GRID[2]):
+    for k in range(SIZE_OF_GRID[2]):
         ZBOUNDS.append(ZBOUNDS[k] + (VOXEL_DIMS[2] / 10))
 
     VOXEL_CENTERS = []
-    for y_index in xrange(len(YBOUNDS) - 1):
-        for x_index in xrange(len(XBOUNDS) - 1):
+    for y_index in range(len(YBOUNDS) - 1):
+        for x_index in range(len(XBOUNDS) - 1):
             VOXEL_CENTERS.append(
                 (
                     XBOUNDS[x_index] + ((0.5 * VOXEL_DIMS[0]) / 10),
@@ -171,24 +162,26 @@ def get_CT_calibration(path_to_calibration=None):
     
     if not path_to_calibration:
         while True:
-            path_to_calibration = raw_input(
+            path_to_calibration = input(
                 "Please input the FULL file path to the CT calibration data:>> "
             )
             if not exists(path_to_calibration):
-                print \
-                    "This is not a valid file path to an existing calibration file."
-                answer = raw_input("Use default (Peppa et al.)? [y/n]:>> ")
+                print(
+                    "This is not a valid file path to an existing " 
+                    + "calibration file."
+                    )
+                answer = input("Use default (Peppa et al.)? [y/n]:>> ")
                 if answer.lower() in ('y','yes'):
                     path_to_calibration = cwd + '/lib/calibration/PeppaCalibrationCurve.dat'
                 elif answer.lower() in ('n', 'no'):
                     pass
                 else: 
-                    print "Input not understood. Try again."
+                    print("Input not understood. Try again.")
             else:
                 break
     else:
         if path_to_calibration.lower() == 'default':
-            print "Calling default calibration curve."
+            print("Calling default calibration curve.")
             path_to_calibration = cwd + '/lib/calibration/PeppaCalibrationCurve2.dat'
 
     HU, mass_density = loadtxt(path_to_calibration,unpack=True)
@@ -209,23 +202,25 @@ def get_media(path_to_media=None):
 
     if not path_to_media:
         while True:
-            path_to_media = raw_input(
+            path_to_media = input(
                 "Please input the FULL file path to the media definitions file curve:>> "
             )
             if not exists(path_to_media):
-                print \
-                    "This is not a valid file path to an existing calibration file."
-                answer = raw_input("Use default (Peppa et al.)? [y/n]:>> ")
+                print(
+                    "This is not a valid file path to an existing "
+                    + "calibration file."
+                    )
+                answer = input("Use default (Peppa et al.)? [y/n]:>> ")
                 if answer.lower() in ('y', 'yes'):
                     path_to_media = cwd + '/lib/calibration/PeppaMedia.dat'
                 elif answer.lower() in ('n', 'no'):
                     pass
                 else:
-                    print "Input not understood. Try again."
+                    print("Input not understood. Try again.")
             else:
                 break
     elif path_to_media.lower() == 'default':
-        print "Calling default media file."
+        print("Calling default media file.")
         path_to_media = cwd + '/lib/media/PeppaMedia.dat'
 
     media_info = read_csv(path_to_media, delim_whitespace=True, header=None)

@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env python3
 # author: Joseph Lucero
 # created on: 25 May 2018 22:13:43
 # purpose: define functions that handles files
@@ -41,11 +41,11 @@ def load_phantom(patientID, label, p_width):
     target_dir = get_target_dir()
 
     while True:
-        phantom_filename = raw_input(
+        phantom_filename = input(
             "Please input path to target file: "
         )
         if not exists(target_dir):
-            print "That was not a valid path. " 
+            print("That was not a valid path.")
             continue
         else:
             break
@@ -55,7 +55,7 @@ def load_phantom(patientID, label, p_width):
             p_data.append(line)
     
     num_of_tissues = int(p_data)
-    for tissue_index in xrange(num_of_tissues):
+    for tissue_index in range(num_of_tissues):
         tissue_names.append(p_data[tissue_index].rstrip("\n"))
     
     for line in p_data:
@@ -70,7 +70,7 @@ def load_phantom(patientID, label, p_width):
     return tissue_names, comp_data
             
 def create_EGSPhant(
-    slice_array_lst, ref_intercept, SIZE_OF_GRID, bounds, 
+    slice_array_lst, contour_map, ref_intercept, SIZE_OF_GRID, bounds, 
     path_to_calibration=None, path_to_media=None, path_to_egsphants=None,
     egsphant_name='my_egsphant'
     ):
@@ -89,9 +89,9 @@ def create_EGSPhant(
     :type :\
     """
 
-    print "\n\n" + "="*50
-    print "Attempting to create egsphant files..."
-    print "="*50
+    print("\n\n" + "="*50)
+    print("Attempting to create egsphant files...")
+    print("="*50)
 
     CT_HU, CT_rho = get_CT_calibration(path_to_calibration)
 
@@ -103,17 +103,16 @@ def create_EGSPhant(
 
     if not path_to_egsphants:
         while True:
-            path_to_egsphants = expanduser(raw_input(
+            path_to_egsphants = expanduser(input(
                 "Please input the full directory path to where you would like the egsphants to go:>> "
             ))
             if not isdir(path_to_egsphants):
-                print \
-                "This input is not a valid directory." 
-                answer = raw_input(
+                print("This input is not a valid directory.")
+                answer = input(
                     "Would you like me to make that folder? [y/n]:>> "
                     )
                 if answer.lower() in ('y','yes'):
-                    print "Making egsphant directory as requested."
+                    print("Making egsphant directory as requested.")
                     makedirs(expanduser(path_to_egsphants))
                     break
             else:
@@ -132,7 +131,7 @@ def create_EGSPhant(
             )
 
         egsphant.write('  0.25')
-        for __ in xrange(len(media_names) - 1):
+        for __ in range(len(media_names) - 1):
             egsphant.write(' '*7 + '0.25')
         egsphant.write('\n')
 
@@ -140,7 +139,7 @@ def create_EGSPhant(
             egsphant.write(' '*2 + '{0}'.format(dim_size))
 
         newline_counter = 0 
-        print "Writing voxel boundaries..."
+        print("Writing voxel boundaries...")
         for x_bound in xbounds:
             if newline_counter % 3 == 0:
                 egsphant.write('\n' + '\t')
@@ -185,15 +184,19 @@ def create_EGSPhant(
 
         media_dict = {media.upper(): 0 for media in media_names}
 
-        print "Writing tisue assignments..."
+        print("Writing tisue assignments...")
 
-        for k in xrange(SIZE_OF_GRID[2]):
-            print "\r" + str(k) + '/' + str(SIZE_OF_GRID[2])
-            for j in xrange(SIZE_OF_GRID[1]):
-                for i in xrange(SIZE_OF_GRID[0]):
+        for k in range(SIZE_OF_GRID[2]):
+            print("\r" + str(k) + '/' + str(SIZE_OF_GRID[2]))
+            for j in range(SIZE_OF_GRID[1]):
+                for i in range(SIZE_OF_GRID[0]):
 
                     ct_value = slice_array_lst[k][j][i] + ref_intercept 
 
+                    # This for-loop is not robust if you have overlapping 
+                    # boundaries for HU min and HU max of different media...
+                    # Ask Rowan about how to improve it. Maybe add contour 
+                    # information to break degeneracies?
                     for (
                         index, (media_HU_low_bound, media_HU_up_bound)
                         ) in enumerate(media_HU_ranges, 1):
@@ -202,24 +205,24 @@ def create_EGSPhant(
                             media_dict[media_names[index-1].upper()] += 1
                             break;
                     else:
-                        print "No media found for these set of indexes:", (i,j,k)
+                        print("No media found for these set of indexes:", tuple(i,j,k))
                 egsphant.write('\n')
             egsphant.write('\n')
         
         egsphant.flush()
-        print "Finished with tissue assignments"
-        print "Media Count:"
-        print media_dict
+        print("Finished with tissue assignments")
+        print("Media Count:")
+        print(media_dict)
 
-        print 
-        print "Writing voxel density assignments..."
+        print()
+        print("Writing voxel density assignments...")
 
         newline_counter = 0  # reset newline counter
 
-        for z in xrange(SIZE_OF_GRID[2]):
-            print "\r" + str(z) + '/' + str(SIZE_OF_GRID[2])
-            for y in xrange(SIZE_OF_GRID[1]):
-                for x in xrange(SIZE_OF_GRID[0]):
+        for z in range(SIZE_OF_GRID[2]):
+            print("\r" + str(z) + '/' + str(SIZE_OF_GRID[2]))
+            for y in range(SIZE_OF_GRID[1]):
+                for x in range(SIZE_OF_GRID[0]):
                     ct_value = slice_array_lst[z][y][x] + ref_intercept
                     current_density = interp(ct_value, CT_HU, CT_rho)
                     if newline_counter % 3 == 0:
@@ -236,9 +239,9 @@ def create_EGSPhant(
                 newline_counter = 0
             egsphant.write('\n')
         egsphant.flush()
-        print "Finished writing voxel density assignments..."
+        print("Finished writing voxel density assignments...")
 
-    print "Finished writing egsphant..."
+    print("Finished writing egsphant...")
 
 def create_egsinp(egsinp_path, script_name):
 
@@ -250,8 +253,8 @@ def create_egsinp(egsinp_path, script_name):
     Outputs:\
     """
 
-    print "\n Attempting to create input file"
-    print '-'*50
+    print("\n Attempting to create input file")
+    print('-'*50)
 
     format_dict, inp_settings = get_egs_brachy_settings(script_name)
 

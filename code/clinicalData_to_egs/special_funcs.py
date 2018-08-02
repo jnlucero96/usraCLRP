@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env python3
 # author: Joseph Lucero
 # created on: 28 June 2018 17:49:24
 # purpose: functions that do special tasks
@@ -7,13 +7,40 @@
 def perform_metallic_artifact_reduction(
     seed_locations, slice_lst_array, BOUNDS, VOXEL_DIMS, VOXEL_CENTERS,
     INTERCEPT, SIZE_OF_GRID
-):
+    ):
 
-    print
-    print '-' * 50
-    print '10' * 10 + "Attempting to perform Metallic Artifact Reduction"
-    print '-' * 50
-    print
+    """\
+    Description:
+    Metallic Artifact Reduction (MAR) method performed in Stephen's thesis. It \
+    removes the high density seeds and replaces them with the average media \
+    density to smooth out the phantom.
+
+    Inputs:
+    :param seed_locations: Locations of all the seeds within each CT image
+    :type seed_locations: list of lists
+    :param slice_lst_array: List of CT images without any modification applied
+    :type slice_lst_array: list of arrays
+    :param BOUNDS: Voxel boundaries in (x, y, z)
+    :type BOUNDS: tuple of lists
+    :param VOXEL_DIMS: Dimensions of the voxels
+    :type VOXEL_DIMS: tuple of floats
+    :param VOXEL_CENTERS: Locations of the centers of all voxels in phantom
+    :type VOXEL_CENTERS: tuple of floats
+    :param INTERCEPT: Rescaling factor that is present within the dicom files
+    :type INTERCEPT: int
+    :param SIZE_OF_GRID: Resolution of the CT images x number of CT images
+    :type SIZE_OF_GRID: tuple of ints
+
+    Outputs:
+    :param slice_lst_array: modified CT images with the MAR applied to it
+    :type slice_lst_array: list of arrays\
+    """
+
+    
+    print('\n\n' + '-' * 50)
+    print('10' * 10 + "Attempting to perform Metallic Artifact Reduction")
+    print('-' * 50 + '\n\n')
+    
 
     # These values are hardcoded but not sure why. Should these be made
     # accessible to the user?
@@ -57,7 +84,7 @@ def perform_metallic_artifact_reduction(
                     mar_counter += 1
                     slice_lst_array[z_pos+2][y_pos][x_pos] = replace - INTERCEPT
 
-    print "Metallic Artifact Reduction complete. {0} high density voxels \
-    replaced".format(mar_counter)
+    print("Metallic Artifact Reduction complete. {0} high density voxels \
+    replaced".format(mar_counter))
 
     return slice_lst_array

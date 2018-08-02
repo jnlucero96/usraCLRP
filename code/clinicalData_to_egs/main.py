@@ -23,7 +23,7 @@ from special_funcs import perform_metallic_artifact_reduction as MAR
 def main(egsphant_create=True, scale_dose=False, run_metallic_reduction=False):
 
     """\
-    Description:
+    Description: 
 
     Inputs:
 
@@ -32,7 +32,7 @@ def main(egsphant_create=True, scale_dose=False, run_metallic_reduction=False):
 
     root_dir = get_target_dir()
     cwd = getcwd()
-    egsphant_name = str(raw_input(
+    egsphant_name = str(input(
         "Please input the base name of the egsphant:>> "
     ))
     
@@ -53,6 +53,7 @@ def main(egsphant_create=True, scale_dose=False, run_metallic_reduction=False):
     if egsphant_create:
         create_EGSPhant(
             slice_array_lst=slice_array_lst, 
+            contour_map=cont_map,
             ref_intercept=reference_dict["INTERCEPT"], 
             SIZE_OF_GRID=reference_dict["SIZE OF GRID"], 
             bounds=reference_dict["BOUNDS"],
