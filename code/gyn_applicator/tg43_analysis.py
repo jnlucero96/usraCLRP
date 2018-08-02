@@ -8,7 +8,6 @@ from __future__ import division
 from sys import argv, exit
 from os import getcwd
 
-
 from numpy import linspace, zeros_like, histogram, arange, array
 from py3ddose import DoseFile, position_to_index
 
@@ -16,7 +15,9 @@ from matplotlib.colors import Normalize
 from matplotlib.cm import get_cmap
 from matplotlib.style import use
 use('seaborn-paper')
-from matplotlib.pyplot import subplots
+from matplotlib.pyplot import subplots, close
+
+from normalize import get_conversion_factor
 
 def calc_per_diff(A,B):
 
@@ -283,7 +284,185 @@ def dose_position_plots():
             + vox_size_list[fig_index] + '.pdf'
             )
 
+
 def isodose_plot():
+    """
+    Description:
+    Takes any number of .3ddose files and plots a plethora of diagnostic plots 
+    from the data
+
+    Inputs:
+    :name list_file: a list of file names that are to be loaded
+    :type list_file: list
+    """
+
+    pwd = getcwd()
+
+    # target_dir = '/Users/JLucero/MPhysProj/results_not_to_git' # for home
+    target_dir = '/Users/student/research/results_not_to_git'  # for work
+
+    file_name_template = '/tg43_{0}pt0mm_sim.phantom_wo_box.3ddose.gz'
+    # file_name_template = '/tg43appl_{1}mmOut_{0}pt0mm_sim.phantom_wo_box.3ddose'
+
+    vox_size_list = [
+        '1',
+        '2'
+    ]
+
+    fig, ax = subplots(
+        1, 1, figsize=(10, 10),
+        sharex='all', sharey='all'
+    )
+    fig2, ax2 = subplots(
+        1, 1, figsize=(10, 10),
+        sharex='all', sharey='all'
+    )
+
+    air_kerma = 326.05715 
+    air_kerma_per_hist = 1.1584e-13
+    max_dwell_time = 0.02917
+
+    for voxel_size in vox_size_list:
+
+        full_data = DoseFile(
+            target_dir + file_name_template.format(voxel_size)
+        )
+
+        full_data.dose *= get_conversion_factor(
+            air_kerma, air_kerma_per_hist, max_dwell_time
+            )  # normalize to desired dose of 5 Gy
+
+        full_data.dose /= 5  # normalize to desired dose of 5 Gy
+        full_data.dose *= 100  # normalize to desired dose of 5 Gy
+
+        x_min, x_max = full_data.x_extent
+        y_min, y_max = full_data.y_extent
+        z_min, z_max = full_data.z_extent
+
+        x_pos = array(full_data.positions[0])
+        y_pos = array(full_data.positions[1])
+        z_pos = array(full_data.positions[2])
+
+        x_pos_mid = (x_pos[:-1] + x_pos[1:]) / 2.0
+        y_pos_mid = (y_pos[:-1] + y_pos[1:]) / 2.0
+        z_pos_mid = (z_pos[:-1] + z_pos[1:]) / 2.0
+
+        # print x_pos_mid.size, y_pos_mid.size, full_data.dose[:, :, position_to_index(0.0, z_pos)].size
+        # exit(0)
+
+        xy_contour = ax.contourf(
+            x_pos_mid, y_pos_mid,
+            full_data.dose[:, :, position_to_index(0.0, z_pos)].transpose(),
+            arange(0, 110, 10),
+            # [5, 10, 20, 50, 100]
+            # cmap=get_cmap('Purples')
+        )
+        # ax.set_title(vox_size_list,fontsize=14)
+
+        xz_contour = ax2.contourf(
+            x_pos_mid, z_pos_mid,
+            full_data.dose[:, position_to_index(0.0, y_pos), :].transpose(),
+            arange(0, 110, 10),
+            # [5, 10, 20, 50, 100]
+            # cmap=get_cmap('Purples')
+        )
+        # ax2.set_title(vox_size_list, fontsize=14)
+
+        # ax.grid(True)
+        ax.xaxis.set_tick_params(labelsize=14)
+        ax.yaxis.set_tick_params(labelsize=14)
+        ax.set_xticks(arange(-10, 10 + 1, 2))
+        ax.set_xlim([-10, 10])
+        ax.set_yticks(arange(-10, 10 + 1, 2))
+        ax.set_ylim([-10, 10])
+        # ax.vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+        # ax.hlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+
+        # ax2.grid(True)
+        ax2.xaxis.set_tick_params(labelsize=14)
+        ax2.yaxis.set_tick_params(labelsize=14)
+        ax2.set_xticks(arange(-10, 10 + 1, 2))
+        ax2.set_xlim([-10, 10])
+        ax2.set_yticks(arange(-10, 10 + 1, 2))
+        ax2.set_ylim([-10, 10])
+        # ax2.vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
+
+        fig.text(
+            0.01, 0.51, 'y-axis (cm)',
+            fontsize=27, rotation='vertical', va='center'
+        )
+        fig.text(
+            0.43, 0.03, 'x-axis (cm)', fontsize=27, va='center'
+        )
+        # fig.text(
+        #     0.52, 0.95,
+        #     ,
+        #     fontsize=27, va='center', ha='center'
+        # )
+
+        cax = fig.add_axes([0.91, 0.09, 0.01, 0.79])
+        cbar1 = fig.colorbar(
+            xy_contour, cax=cax, orientation='vertical',
+            ax=ax, ticks=arange(0, 110, 10)
+        )
+        cbar1.set_label('Percentage Dose (%)', fontsize=24)
+
+        cbar1.ax.tick_params(labelsize=14)
+        fig.tight_layout()
+
+        left = 0.1  # the left side of the subplots of the figure
+        right = 0.89    # the right side of the subplots of the figure
+        bottom = 0.09   # the bottom of the subplots of the figure
+        top = 0.88     # the top of the subplots of the figure
+        # wspace = 0.2  # the amount of width reserved for blank space between subplots
+        # hspace = 0.2  # the amount of height reserved for white space between subplotss
+
+        fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
+
+        fig.savefig(
+            pwd + '/tg43_' + voxel_size + '_xy_isodose_profile_subplots.pdf'
+        )
+
+        fig2.text(
+            0.01, 0.51, 'z-axis (cm)',
+            fontsize=27, rotation='vertical', va='center'
+        )
+        fig2.text(
+            0.43, 0.03, 'x-axis (cm)', fontsize=27, va='center'
+        )
+        # fig2.text(
+        #     0.52, 0.95,
+        #     sup_title,
+        #     fontsize=27, va='center', ha='center'
+        # )
+        cax2 = fig2.add_axes([0.90, 0.09, 0.01, 0.79])
+        cbar2 = fig2.colorbar(
+            xz_contour, cax=cax2, orientation='vertical',
+            ax=ax2, ticks=arange(0, 110, 10)
+        )
+        cbar2.set_label('Percentage Dose (%)', fontsize=24)
+        # cbar2.set_clim([0, 100])
+        cbar2.ax.tick_params(labelsize=14)
+
+        fig2.tight_layout()
+
+        left = 0.1  # the left side of the subplots of the figure
+        right = 0.888    # the right side of the subplots of the figure
+        bottom = 0.09   # the bottom of the subplots of the figure
+        top = 0.88     # the top of the subplots of the figure
+        # wspace = 0.2  # the amount of width reserved for blank space between subplots
+        # hspace = 0.2  # the amount of height reserved for white space between subplotss
+
+        fig2.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
+
+        fig2.savefig(
+            pwd + '/tg43_' + voxel_size + 'mm_xz_isodose_profile_subplots.pdf'
+        )
+
+        close(fig)
+        close(fig2)
+
+def isodose_plot_compare():
     """
     Description:
     Takes any number of .3ddose files and plots a plethora of diagnostic plots 
@@ -516,4 +695,5 @@ if __name__ == "__main__":
     # generate_tdvh_tg43()
     # dose_position_plots()
     isodose_plot()
+    # isodose_plot_compare()
 

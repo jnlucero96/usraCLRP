@@ -16,20 +16,14 @@ def position_to_index(p, A):
     """
     Description:
     Checks entire position array A until it finds the smallest value that is 
-    less than the input position and gives out the index of that position.
+    less than the input position p and gives out the index of that position.
     
     Inputs:
 
     Outputs:
     """
-    if p <= 0:
-        return where(
-            logical_and(p >= A[:-1], p < A[1:])
-        )[0][0] + 1
-    else:
-        return where(
-            logical_and(p >= A[:-1], p < A[1:])
-        )[0][0]
+    
+    return where(logical_and(p >= A[:-1], p < A[1:]))[0][0]
 
 class DoseFile(object):
 
