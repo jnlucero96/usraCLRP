@@ -518,25 +518,6 @@ def rel_dose_position_plot(interpolate=False):
             y_pos_mid = (y_pos[1:] + y_pos[:-1]) / 2.0
             z_pos_mid = (z_pos[1:] + z_pos[:-1]) / 2.0
 
-            x_position_to_index = {
-                x_position: x_index
-                for x_index, x_position in enumerate(
-                    unshielded_full_data.positions[0]
-                    )
-            }
-            y_position_to_index = {
-                y_position: y_index
-                for y_index, y_position in enumerate(
-                    unshielded_full_data.positions[1]
-                    )
-            }
-            z_position_to_index = {
-                z_position: z_index
-                for z_index, z_position in enumerate(
-                    unshielded_full_data.positions[2]
-                    )
-            }
-
             if interpolate:
                 unshielded_interpolated_dose = RGI(
                     (x_pos_mid, y_pos_mid, z_pos_mid),
@@ -1476,10 +1457,12 @@ def tg43_mbdca_comparison_histograms():
                 + vox_size + 'mm_nb.pdf'
             )
 
+
 if __name__ == "__main__":
     # dose_position_plots()
     # dose_inv_position_plots()
     # rel_dose_position_plot()
-    isodose_plot(mode='mlwa')
+    isodose_plot(mode='tg43pure')
     # tg43_mbdca_comparison_isodose_plot(explicit_contour=False)
     # tg43_mbdca_comparison_histograms()
+

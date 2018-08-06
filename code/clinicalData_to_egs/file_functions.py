@@ -41,9 +41,7 @@ def load_phantom(patientID, label, p_width):
     target_dir = get_target_dir()
 
     while True:
-        phantom_filename = input(
-            "Please input path to target file: "
-        )
+        phantom_filename = input("Please input path to target file: ")
         if not exists(target_dir):
             print("That was not a valid path.")
             continue
@@ -108,9 +106,7 @@ def create_EGSPhant(
             ))
             if not isdir(path_to_egsphants):
                 print("This input is not a valid directory.")
-                answer = input(
-                    "Would you like me to make that folder? [y/n]:>> "
-                    )
+                answer = input("Would you like me to make that folder? [y/n]:>> ")
                 if answer.lower() in ('y','yes'):
                     print("Making egsphant directory as requested.")
                     makedirs(expanduser(path_to_egsphants))
