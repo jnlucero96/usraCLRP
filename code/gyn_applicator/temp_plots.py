@@ -221,7 +221,7 @@ def dose_inv_position_plots(interpolate=False):
 
     air_kerma_str = 326.05715
     air_kerma_per_hist = 1.1584e-13
-    max_dwell_time = 0.02917
+    max_dwell_time = 0.02917    
 
     for x_pos_desired in [1.56, 1.61]:
         print '=' * 40
@@ -254,12 +254,6 @@ def dose_inv_position_plots(interpolate=False):
                     full_data.dose *= get_conversion_factor(
                         air_kerma_str, air_kerma_per_hist, max_dwell_time
                     )
-
-                    Nx, Ny, Nz = full_data.shape
-
-                    x_min, x_max = full_data.x_extent
-                    y_min, y_max = full_data.y_extent
-                    z_min, z_max = full_data.z_extent
 
                     x_pos = array(full_data.positions[0])
                     y_pos = array(full_data.positions[1])
@@ -452,8 +446,8 @@ def rel_dose_position_plot(interpolate=False):
     target_dir = '/Users/student/research/results_not_to_git'  # for work
 
     outer_diams = [
-        # '25', 
-        '30'#, '35', '40'
+        '25' 
+        #'30'#, '35', '40'
     ]
 
     diameter_to_radius = {
@@ -1398,7 +1392,7 @@ def tg43_mbdca_comparison_histograms():
                 per_diff = nan_to_num(
                     ((tg43_dose - mlwa_dose) / (tg43_dose + mlwa_dose)) * 200)
 
-                xy_contour = ax[ax_x, ax_y].hist(
+                xy_hist_data = ax[ax_x, ax_y].hist(
                     # matplotlib plots column by row (instead of row by column)
                     # so transpose data array to account for this
                     per_diff[:, :, :].flatten(),
@@ -1462,7 +1456,7 @@ if __name__ == "__main__":
     # dose_position_plots()
     # dose_inv_position_plots()
     # rel_dose_position_plot()
-    isodose_plot(mode='tg43pure')
+    # isodose_plot(mode='tg43pure')
     # tg43_mbdca_comparison_isodose_plot(explicit_contour=False)
-    # tg43_mbdca_comparison_histograms()
+    tg43_mbdca_comparison_histograms()
 

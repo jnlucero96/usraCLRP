@@ -10,7 +10,7 @@ from os import getcwd
 
 from numpy import (
     linspace, zeros_like, histogram, arange, sqrt, isnan, array, meshgrid,
-    empty, nan_to_num
+    empty, nan_to_num, loadtxt
     )
 from scipy.interpolate import RegularGridInterpolator as RGI
 from py3ddose import DoseFile, position_to_index
@@ -356,7 +356,7 @@ def dose_position_plots():
 
         fig.savefig(
             pwd + '/dosage_comparison_' + vox_size_list[fig_index] + '.pdf'
-            )
+            )   
 
 def rel_dose_position_plot():
     """
@@ -372,7 +372,7 @@ def rel_dose_position_plot():
     pwd = getcwd()
 
     # target_dir = '/Users/JLucero/MPhysProj/results_not_to_git' for home
-    target_dir = '/Users/student/research/results_not_to_git/2018-07-13'  # for work
+    target_dir = '/Users/student/research/results_not_to_git'  # for work
 
     outer_diams = [
         # '25', 
@@ -389,7 +389,7 @@ def rel_dose_position_plot():
     }
 
     voxel_type = [
-        # '1pt0',
+        '1pt0',
         '2pt0'
     ]
 
@@ -412,12 +412,27 @@ def rel_dose_position_plot():
                 '/mlwa_{0}mmOut_270shield_{1}mm'.format(diameter, vox_type) + \
                 '_sim.phantom_wo_applicator.3ddose.gz'
 
-            title_str = 'Relative Dose vs. Position \n 192Ir-As-Source; ncase = 5E9'
+            if vox_type == '1pt0':
+                stride = 4
+            else:
+                stride = 2            
 
             fig, ax = subplots(
                 1, 1, figsize=(10, 7)
                 )
             ax_twin = ax.twinx()
+
+            x_pts_lymper, rel_dose_lymper = loadtxt(
+                '/Users/student/research/reference/lymperopoulou_rel_dose_digitized.dat',
+                unpack=True
+                )
+
+            ax.scatter(
+                x_pts_lymper, rel_dose_lymper, label='Reference'
+                )
+            ax_twin.scatter(
+                x_pts_lymper, rel_dose_lymper,
+                )
 
             unshielded_full_data = DoseFile(unshielded_file, load_uncertainty=True)
             shield_90_data = DoseFile(shielded_file_90, load_uncertainty=True)
@@ -440,19 +455,6 @@ def rel_dose_position_plot():
             x_pos_mid = (x_pos[:-1] + x_pos[1:]) / 2.0
             y_pos_mid = (y_pos[:-1] + y_pos[1:]) / 2.0
             z_pos_mid = (z_pos[:-1] + z_pos[1:]) / 2.0
-
-            x_position_to_index = {
-                x_position: x_index
-                for x_index, x_position in enumerate(unshielded_full_data.positions[0])
-            }
-            y_position_to_index = {
-                y_position: y_index
-                for y_index, y_position in enumerate(unshielded_full_data.positions[1])
-            }
-            z_position_to_index = {
-                z_position: z_index
-                for z_index, z_position in enumerate(unshielded_full_data.positions[2])
-            }
 
             error_90 = sqrt(
                 (shield_90_data.uncertainty) ** 2
@@ -481,125 +483,114 @@ def rel_dose_position_plot():
             error_270 *= shield_270_data.dose.__abs__()
 
             ax.errorbar(
-                x_pos_mid[::2],
+                x_pos_mid[::stride],
                 # shield_90_data.dose[
                 shield_90_interpolated_dose_matrix[
                 # error_90[
                     :, 
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
+                ][::stride],
                 yerr=error_90[
                     :,
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
-                lw=0.0, label=r'$90^{\circ}$', color='darkgreen',
-                markeredgecolor='darkgreen', marker='o',
-                markeredgewidth=1, markersize=10, markerfacecolor='None',
+                ][::stride],
+                lw=2.0, label=r'$90^{\circ}$', color='darkgreen',
+                # markeredgecolor='darkgreen', marker='o',
+                # markeredgewidth=1, markersize=10, markerfacecolor='None',
                 elinewidth=1.5, capsize=1.5
             )
             ax_twin.errorbar(
-                x_pos_mid[::2],
-                # shield_90_data.dose[
+                x_pos_mid[::stride],
                 shield_90_interpolated_dose_matrix[
-                # error_90[
                     :, 
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
+                ][::stride],
                 yerr=error_90[
                     :, 
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
-                lw=0.0, label=r'$90^{\circ}$', color='darkgreen',
-                markeredgecolor='darkgreen', marker='o',
-                markeredgewidth=1, markersize=10, markerfacecolor='None',
+                ][::stride],
+                lw=2.0, label=r'$90^{\circ}$', color='darkgreen',
+                # markeredgecolor='darkgreen', marker='o',
+                # markeredgewidth=1, markersize=10, markerfacecolor='None',
                 elinewidth=1.5, capsize=1.5
             )
 
             ax.errorbar(
-                x_pos_mid[::2],
-                # shield_180_data.dose[
+                x_pos_mid[::stride],
                 shield_180_interpolated_dose_matrix[
-                # error_180[
                     :,
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
+                ][::stride],
                 yerr=error_180[
                     :,
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
-                lw=0.0, label=r'$180^{\circ}$', color='purple',
-                markeredgecolor='purple', marker='s',
-                markeredgewidth=1, markersize=10, markerfacecolor='None',
+                ][::stride],
+                lw=2.0, label=r'$180^{\circ}$', color='purple',
+                # markeredgecolor='purple', marker='s',
+                # markeredgewidth=1, markersize=10, markerfacecolor='None',
                 elinewidth=1.5, capsize=1.5
             )
             ax_twin.errorbar(
-                x_pos_mid[::2],
-                # shield_180_data.dose[
+                x_pos_mid[::stride],
                 shield_180_interpolated_dose_matrix[
-                # error_180[
                     :,
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
+                ][::stride],
                 yerr=error_180[
                     :,
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
-                lw=0.0, label=r'$180^{\circ}$', color='purple',
-                markeredgecolor='purple', marker='s',
-                markeredgewidth=1, markersize=10, markerfacecolor='None',
+                ][::stride],
+                lw=2.0, label=r'$180^{\circ}$', color='purple',
+                # markeredgecolor='purple', marker='s',
+                # markeredgewidth=1, markersize=10, markerfacecolor='None',
                 elinewidth=1.5, capsize=1.5
             )
 
             ax.errorbar(
-                x_pos_mid[::2],
-                # shield_270_data.dose[
+                x_pos_mid[::stride],
                 shield_270_interpolated_dose_matrix[
-                # error_270[
                     :,
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
+                ][::stride],
                 yerr=error_270[
                     :,
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
-                lw=0.0, label=r'$270^{\circ}$', color='darkorange',
-                markeredgecolor='darkorange', marker='^',
-                markeredgewidth=1, markersize=10, markerfacecolor='None',
+                ][::stride],
+                lw=2.0, label=r'$270^{\circ}$', color='darkorange',
+                # markeredgecolor='darkorange', marker='^',
+                # markeredgewidth=1, markersize=10, markerfacecolor='None',
                 elinewidth=1.5, capsize=1.5
             )
             ax_twin.errorbar(
-                x_pos_mid[::2],
-                # shield_270_data.dose[
+                x_pos_mid[::stride],
                 shield_270_interpolated_dose_matrix[
-                # error_270[
                     :,
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
+                ][::stride],
                 yerr=error_270[
                     :,
                     position_to_index(0.0, y_pos_mid),
                     position_to_index(0.0, z_pos_mid)
-                ][::2],
-                lw=0.0, label=r'$270^{\circ}$', color='darkorange',
-                markeredgecolor='darkorange', marker='^',
-                markeredgewidth=1, markersize=10, markerfacecolor='None',
+                ][::stride],
+                lw=2.0, label=r'$270^{\circ}$', color='darkorange',
+                # markeredgecolor='darkorange', marker='^',
+                # markeredgewidth=1, markersize=10, markerfacecolor='None',
                 elinewidth=1.5, capsize=1.5
             )
 
-            ax.legend(loc=0, prop={'size': 18})
+            ax.legend(loc='upper left', prop={'size': 12})
             ax.grid(False)
-            # ax.set_title('X - axis', fontsize=20)
             ax.set_yticks(arange(0.80, 1.11, 0.05))
             ax.set_ylim([0.80, 1.10])
             ax.xaxis.set_tick_params(labelsize=14)
@@ -634,11 +625,6 @@ def rel_dose_position_plot():
             fig.text(
                 0.72, 0.025, 'x-axis (cm)', fontsize=20, va='center', ha='center'
             )
-            # fig.text(
-            #     0.52, 0.95,
-            #     title_str,
-            #     fontsize=27, va='center', ha='center'
-            # )
             fig.tight_layout()
 
             left = 0.11  # the left side of the subplots of the figure
@@ -659,7 +645,7 @@ def rel_dose_position_plot():
             close(fig)
 
 
-def dose_inv_position_plots(interpolate=False):
+def dose_inv_position_plots(interpolate=False, plot=False):
     """
     Description:
     Takes any number of .3ddose files and plots a plethora of diagnostic plots 
@@ -685,7 +671,7 @@ def dose_inv_position_plots(interpolate=False):
         # target_dir +
         # '/mlwa_270shield_{0}_sim.phantom_wo_applicator_wo_box.3ddose',
         target_dir +
-        '/mlwa_30mmOut_{0}shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
+        '/mlwa_25mmOut_{0}shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         # target_dir +
         # '/mlwa_30mmOut_{0}shield_{0}_sim.phantom_wo_applicator.3ddose.gz',
         # target_dir +
@@ -699,11 +685,11 @@ def dose_inv_position_plots(interpolate=False):
     ]
 
     shield_type_lst = [
-        # '0',
+        '0'
         # '90',
         # '180',
         # '270'
-        '180'
+        # '180'
     ]
 
     vox_size_lst = [
@@ -722,9 +708,15 @@ def dose_inv_position_plots(interpolate=False):
         'z-cuts (|x| = {0}, y = {1})'
     ]
 
-    air_kerma_str = 326.05715
-    air_kerma_per_hist = 1.1584e-13
-    max_dwell_time = 0.02917
+    # Lymperopoulou
+    # air_kerma_true = 326.05715
+    # air_kerma_per_hist = 1.1584e-13
+    # max_dwell_time = 0.02917
+
+    # Ali-Cygler
+    air_kerma_str = 431.6
+    air_kerma_per_hist = 1.1517e-13
+    max_dwell_time = 0.01352278
 
     for x_pos_desired in [1.51, 1.61]:
         print '=' * 40
@@ -735,20 +727,9 @@ def dose_inv_position_plots(interpolate=False):
                 # iterate through shield types
                 for index2, shield_type in enumerate(shield_type_lst):
 
-                    fig = figure(figsize=(15, 10))
-                    minor_locator = MultipleLocator(0.5)
-                    minor_locator2 = MultipleLocator(0.5)
-                    gs = GridSpec(ncols=2, nrows=2)
-
-                    ax1 = fig.add_subplot(gs[0, 0])
-                    ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
-                    ax3 = fig.add_subplot(gs[1, :])
-
-                    ax = [ax1, ax2, ax3]
-
                     full_data = DoseFile(
                         target_dir
-                        + '/mlwa_30mmOut_'
+                        + '/mlwa_25mmOut_'
                         + '{0}shield_{1}mm'.format(shield_type, vox_size)
                         + '_sim.phantom_wo_applicator.3ddose.gz',
                         load_uncertainty=True
@@ -793,87 +774,78 @@ def dose_inv_position_plots(interpolate=False):
                             flat.transpose()
                         ).reshape(*points[0].shape).transpose((1, 0, 2))
 
-                        z_depths = empty(z_pos.size)
-
-                        for z_depth_index in xrange(z_pos.size):
-                            z_depths[z_depth_index] = (
+                        z_depths = (
                                 dose_matrix[
                                     position_to_index(x_pos_desired, x_pos),
                                     position_to_index(y_pos_desired, y_pos),
-                                    z_depth_index
+                                    :
                                 ] / dose_matrix[
                                     position_to_index(-x_pos_desired, x_pos),
                                     position_to_index(y_pos_desired, y_pos),
-                                    z_depth_index
+                                    :
                                 ]
                             )
-
-                        ax[0].plot(
-                            z_pos,
-                            dose_matrix[
-                                position_to_index(x_pos_desired, x_pos),
-                                position_to_index(y_pos_desired, y_pos),
-                                :
-                            ],
-                            lw=3.0
-                        )
-                        ax[1].plot(
-                            z_pos,
-                            dose_matrix[
-                                position_to_index(-x_pos_desired, x_pos),
-                                position_to_index(y_pos_desired, y_pos),
-                                :
-                            ],
-                            lw=3.0
-                        )
-                        ax[2].plot(
-                            z_pos,
-                            z_depths * 100,
-                            lw=3.0
-                        )
 
                     else:
 
                         dose_matrix = full_data.dose
                         err_matrix = full_data.uncertainty * dose_matrix.__abs__()
 
-                        z_depths = sqrt(
+                        z_depths = (
                             dose_matrix[
-                                position_to_index(x_pos_desired, x_pos_mid),
-                                position_to_index(y_pos_desired, y_pos_mid),
+                                position_to_index(x_pos_desired, x_pos),
+                                position_to_index(y_pos_desired, y_pos),
                                 :
                             ] / dose_matrix[
-                                position_to_index(-x_pos_desired,x_pos_mid),
-                                position_to_index(y_pos_desired, y_pos_mid),
+                                position_to_index(-x_pos_desired,x_pos),
+                                position_to_index(y_pos_desired, y_pos),
                                 :
                             ]
                         )
                         z_depths_err = sqrt(
                             (err_matrix[
-                                position_to_index(x_pos_desired, x_pos_mid),
-                                position_to_index(y_pos_desired, y_pos_mid),
+                                position_to_index(x_pos_desired, x_pos),
+                                position_to_index(y_pos_desired, y_pos),
                                 :
                             ] ** 2) * (err_matrix[
-                                position_to_index(-x_pos_desired,x_pos_mid),
-                                position_to_index(y_pos_desired, y_pos_mid),
+                                position_to_index(-x_pos_desired,x_pos),
+                                position_to_index(y_pos_desired, y_pos),
                                 :
                             ] ** 2)
                         ) * z_depths.__abs__()
 
-                        print "For shield type:", shield_type, ", voxel size:", vox_size
-                        print "mean =", z_depths.mean(), ", std. deviation =", z_depths.std()
-                        print
+                    print "For shield type:", shield_type, ", voxel size:", vox_size
+                    print "mean =", z_depths[
+                        position_to_index(-2.5, z_pos):position_to_index(2.6, z_pos)
+                        ].mean(), ", std. deviation =", z_depths[
+                            position_to_index(-2.5, z_pos):position_to_index(2.6, z_pos)
+                        ].std()
+                    print "At origin:", z_depths[position_to_index(0.0, z_pos)], z_depths_err[position_to_index(0.0, z_pos)]
+                    print; 
+
+                    if plot:
+                        
+                        fig = figure(figsize=(15, 10))
+                        minor_locator = MultipleLocator(0.5)
+                        minor_locator2 = MultipleLocator(0.5)
+                        gs = GridSpec(ncols=2, nrows=2)
+
+                        ax1 = fig.add_subplot(gs[0, 0])
+                        ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
+                        ax3 = fig.add_subplot(gs[1, :])
+
+                        ax = [ax1, ax2, ax3]
 
                         ax[0].errorbar(
                             z_pos_mid,
                             dose_matrix[
-                                position_to_index(x_pos_desired, x_pos_mid),
-                                position_to_index(y_pos_desired, y_pos_mid),
+                                position_to_index(x_pos_desired, x_pos),
+                                position_to_index(y_pos_desired, y_pos),
                                 :
                             ],
                             yerr=err_matrix[
-                                position_to_index(x_pos_desired, x_pos_mid),
-                                position_to_index(y_pos_desired, y_pos_mid),
+                                position_to_index(x_pos_desired, x_pos),
+                                position_to_index(y_pos_desired, y_pos),
                                 :
                                 ],
                             lw=3.0, capsize=2.0, elinewidth=2.0
@@ -881,13 +853,13 @@ def dose_inv_position_plots(interpolate=False):
                         ax[1].errorbar(
                             z_pos_mid,
                             dose_matrix[
-                                position_to_index(-x_pos_desired, x_pos_mid),
-                                position_to_index(y_pos_desired, y_pos_mid),
+                                position_to_index(-x_pos_desired, x_pos),
+                                position_to_index(y_pos_desired, y_pos),
                                 :
                             ],
                             yerr=err_matrix[
-                                position_to_index(-x_pos_desired, x_pos_mid),
-                                position_to_index(y_pos_desired, y_pos_mid),
+                                position_to_index(-x_pos_desired, x_pos),
+                                position_to_index(y_pos_desired, y_pos),
                                 :
                                 ],
                             lw=3.0, capsize=2.0, elinewidth=2.0
@@ -899,60 +871,60 @@ def dose_inv_position_plots(interpolate=False):
                             lw=3.0, capsize=2.0, elinewidth=2.0
                         )
 
-                    ax[0].set_ylabel(
-                        r"$D_{\mathrm{shielded}}$ (Gy)", fontsize=17
-                    )
-                    ax[1].set_ylabel(
-                        r"$D_{\mathrm{unshielded}}$ (Gy)", fontsize=17
-                    )
-                    ax[2].set_ylabel(
-                        r"$D_{\mathrm{shielded}}\ /\ D_{\mathrm{unshielded}}$ (%)",
-                        fontsize=17
-                    )
+                        ax[0].set_ylabel(
+                            r"$D_{\mathrm{shielded}}$ (Gy)", fontsize=17
+                        )
+                        ax[1].set_ylabel(
+                            r"$D_{\mathrm{unshielded}}$ (Gy)", fontsize=17
+                        )
+                        ax[2].set_ylabel(
+                            r"$D_{\mathrm{shielded}}\ /\ D_{\mathrm{unshielded}}$ (%)",
+                            fontsize=17
+                        )
 
-                    for m in xrange(3):
-                        ax[m].grid(True, which='both')
-                        ax[m].set_xticks(arange(-10, 10 + 1, 2))
-                        ax[m].xaxis.set_minor_locator(minor_locator)
-                        if m != 2:
-                            ax[m].yaxis.set_minor_locator(minor_locator2)
-                        ax[m].xaxis.set_tick_params(labelsize=12)
-                        ax[m].yaxis.set_tick_params(labelsize=12)
-                        ax[m].set_xlim([-10, 10])
+                        for m in xrange(3):
+                            ax[m].grid(True, which='both')
+                            ax[m].set_xticks(arange(-10, 10 + 1, 2))
+                            ax[m].xaxis.set_minor_locator(minor_locator)
+                            if m != 2:
+                                ax[m].yaxis.set_minor_locator(minor_locator2)
+                            ax[m].xaxis.set_tick_params(labelsize=12)
+                            ax[m].yaxis.set_tick_params(labelsize=12)
+                            ax[m].set_xlim([-10, 10])
 
-                    # fig.text(
-                    #     0.01, 0.51, 'Ratio at depths',
-                    #     fontsize=27, rotation='vertical', va='center'
-                    # )
-                    fig.text(
-                        0.55, 0.03, 'Depth of cut (cm)', fontsize=27, va='center',
-                        ha='center'
-                    )
-                    # fig.text(
-                    #     0.52, 0.95,
-                    #     'Dose Ratios vs. Depth \n With Volume Correction; ncase = 1E9',
-                    #     fontsize=27, va='center', ha='center'
-                    # )
-                    fig.tight_layout()
+                        # fig.text(
+                        #     0.01, 0.51, 'Ratio at depths',
+                        #     fontsize=27, rotation='vertical', va='center'
+                        # )
+                        fig.text(
+                            0.55, 0.03, 'Depth of cut (cm)', fontsize=27, va='center',
+                            ha='center'
+                        )
+                        # fig.text(
+                        #     0.52, 0.95,
+                        #     'Dose Ratios vs. Depth \n With Volume Correction; ncase = 1E9',
+                        #     fontsize=27, va='center', ha='center'
+                        # )
+                        fig.tight_layout()
 
-                    left = 0.09  # the left side of the subplots of the figure
-                    right = 0.97    # the right side of the subplots of the figure
-                    bottom = 0.09   # the bottom of the subplots of the figure
-                    top = 0.95     # the top of the subplots of the figure
-                    # wspace = 0.2  # the amount of width for blank space between subplots
-                    # hspace = 0.2  # the amount of height for white space between subplots
+                        left = 0.09  # the left side of the subplots of the figure
+                        right = 0.97    # the right side of the subplots of the figure
+                        bottom = 0.09   # the bottom of the subplots of the figure
+                        top = 0.95     # the top of the subplots of the figure
+                        # wspace = 0.2  # the amount of width for blank space between subplots
+                        # hspace = 0.2  # the amount of height for white space between subplots
 
-                    fig.subplots_adjust(
-                        left=left, bottom=bottom, right=right, top=top)
+                        fig.subplots_adjust(
+                            left=left, bottom=bottom, right=right, top=top)
 
-                    fig.savefig(
-                        pwd + '/dosage_inv_comparison_' + vox_size
-                        + '_shield' + shield_type
-                        + '_x' + str(x_pos_desired) + '_y' + str(y_pos_desired)
-                        + '.pdf'
-                    )
+                        fig.savefig(
+                            pwd + '/dosage_inv_comparison_' + vox_size
+                            + '_shield' + shield_type
+                            + '_x' + str(x_pos_desired) + '_y' + str(y_pos_desired)
+                            + '.pdf'
+                        )
 
-                    close(fig)
+                        close(fig)
 
 def isodose_plot(mode='mlwa'):
     """
@@ -973,6 +945,9 @@ def isodose_plot(mode='mlwa'):
     air_kerma_true = 326.05715
     air_kerma_per_hist = 1.1584e-13
     max_dwell_time = 0.02917
+    # air_kerma_true = 431.6
+    # air_kerma_per_hist = 1.1517e-13
+    # max_dwell_time = 0.01352278
 
     if mode == 'mlwa':
         target_file = '/mlwa_{1}mmOut_{0}shield_{2}pt0mm_sim.phantom_wo_' + \
@@ -992,8 +967,8 @@ def isodose_plot(mode='mlwa'):
 
     
     outer_diams = [
-        # '25',
-        '30'
+        '25'
+        # '30'
         # '35',
         # '40'
     ]
@@ -1140,8 +1115,11 @@ def isodose_plot(mode='mlwa'):
             cbar1 = fig.colorbar(
                 xy_contour, cax=cax, orientation='vertical',
                 ax=ax
+                # ticks=[0, 20, 40, 60, 80, 100]
             )
             cbar1.set_label('Percentage Isodose (%)', fontsize=24)
+            # cbar1.set_label('Dose (Gy)', fontsize=24)
+            # cbar1.ax.set_yticklabels([0, 1, 2, 3, 4, 5])
             cbar1.ax.tick_params(labelsize=20)
             fig.tight_layout()
 
@@ -1170,8 +1148,11 @@ def isodose_plot(mode='mlwa'):
             cbar2 = fig2.colorbar(
                 xz_contour, cax=cax2, orientation='vertical',
                 ax=ax
+                # ticks=[0, 20, 40, 60, 80, 100]
             )
             cbar2.set_label('Percentage Isodose (%)', fontsize=20)
+            # cbar2.set_label('Dose (Gy)', fontsize=20)
+            # cbar2.ax.set_yticklabels([0, 1, 2, 3, 4, 5])
             cbar2.ax.tick_params(labelsize=20)
 
             fig2.tight_layout()
@@ -1301,9 +1282,9 @@ def tg43_mbdca_comparison_isodose_plot(explicit_contour=False):
                     # so transpose data array to account for this
                     per_diff[:, :, position_to_index(
                         0.0, z_pos_mid)].transpose(),
-                    arange(-200, 201, 50),
+                    arange(-25, 176+1, 25),
                     # [5, 10, 20, 50, 100],
-                    # cmap=get_cmap('gnuplot')
+                    cmap=get_cmap('hot')
                 )
                 ax[ax_x, ax_y].set_title(
                     r'${0}$'.format(shield_type) + r'$^{\circ}$ shielding',
@@ -1315,10 +1296,10 @@ def tg43_mbdca_comparison_isodose_plot(explicit_contour=False):
                     # matplotlib plots column by row (instead of row by column)
                     # so transpose data array to account for this
                     per_diff[:, position_to_index(
-                        0.0, y_pos_mid), :].transpose()
-                    # arange(0, 110, 10),
+                        0.0, y_pos_mid), :].transpose(),
+                    arange(-25, 176+1, 25),
                     # [5, 10, 20, 50, 100],
-                    # cmap=get_cmap('gnuplot')
+                    cmap=get_cmap('hot')
                 )
                 ax2[ax_x, ax_y].set_title(
                     r'${0}$'.format(shield_type) + r'$^{\circ}$ shielding',
@@ -1414,7 +1395,7 @@ def tg43_mbdca_comparison_isodose_plot(explicit_contour=False):
             fig.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
             fig.savefig(
-                pwd + '/tg43-mbdca_compare_xy_isodose_profile_' + diameter + 'mmOut_'
+                pwd + '/tg43appl_mbdca_compare_xy_isodose_profile_' + diameter + 'mmOut_'
                 + vox_size + 'mm.pdf'
             )
 
@@ -1427,7 +1408,7 @@ def tg43_mbdca_comparison_isodose_plot(explicit_contour=False):
             )
             cax2 = fig2.add_axes([0.91, 0.09, 0.01, 0.86])
             cbar2 = fig2.colorbar(
-                xz_contour, cax=cax2, orientation='vertical',
+                xy_contour, cax=cax2, orientation='vertical',
                 ax=ax
             )
             cbar2.set_label('Percentage difference (%)', fontsize=17)
@@ -1446,7 +1427,7 @@ def tg43_mbdca_comparison_isodose_plot(explicit_contour=False):
                                  right=right, top=top)
 
             fig2.savefig(
-                pwd + '/tg43-mbdca_compare_xz_isodose_profile_' + diameter + 'mmOut_'
+                pwd + '/tg43appl_mbdca_compare_xz_isodose_profile_' + diameter + 'mmOut_'
                 + vox_size + 'mm.pdf'
             )
 
@@ -1567,12 +1548,12 @@ def tg43_mbdca_comparison_histograms():
                     ax[n, m].set_ylim([0, 0.05])
 
             fig.text(
-                0.02, 0.51, 'Probability Density',
+                0.02, 0.51, 'Probability density',
                 fontsize=27, rotation='vertical', 
                 va='center', ha='center'
             )
             fig.text(
-                0.53, 0.025, 'Percentage Difference', fontsize=27, 
+                0.52, 0.025, 'Percentage difference (%)', fontsize=27, 
                 va='center', ha='center'
             )
 
@@ -1597,9 +1578,8 @@ if __name__ == "__main__":
     # generate_tdvh_tg43()
     # dose_position_plots()
     # dose_inv_position_plots()
-    # rel_dose_position_plot()
-    # rel_dose_position_plot2()
-    # isodose_plot()
+    rel_dose_position_plot()
+    # isodose_plot(mode='mlwa')
     # tg43_mbdca_comparison_isodose_plot()
-    tg43_mbdca_comparison_histograms()
+    # tg43_mbdca_comparison_histograms()
 
