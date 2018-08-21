@@ -852,14 +852,9 @@ def isodose_plot(mode='mlwa'):
                 y_pos_mid = (y_pos[:-1] + y_pos[1:]) / 2.0
                 z_pos_mid = (z_pos[:-1] + z_pos[1:]) / 2.0
 
-                if shield_index == 0:
-                    ax_x, ax_y = 0, 0
-                elif shield_index == 1:
-                    ax_x, ax_y = 0, 1
-                elif shield_index == 2:
-                    ax_x, ax_y = 1, 0
-                else:
-                    ax_x, ax_y = 1, 1
+                # map the shield type to the correct subplot
+                ax_x = shield_index // 2
+                ax_y = shield_index % 2  
 
                 Nx, Ny, Nz = full_data.shape
 
@@ -1114,14 +1109,8 @@ def tg43_mbdca_comparison_isodose_plot(explicit_contour=False):
                 y_pos_mid = (y_pos[:-1] + y_pos[1:]) / 2.0
                 z_pos_mid = (z_pos[:-1] + z_pos[1:]) / 2.0
 
-                if shield_index == 0:
-                    ax_x, ax_y = 0, 0
-                elif shield_index == 1:
-                    ax_x, ax_y = 0, 1
-                elif shield_index == 2:
-                    ax_x, ax_y = 1, 0
-                else:
-                    ax_x, ax_y = 1, 1
+                ax_x = shield_index // 2
+                ax_y = shield_index % 2
 
                 tg43_dose = tg43_full_data.dose * dose_scale_factor
                 mlwa_dose = mlwa_full_data.dose * dose_scale_factor
@@ -1376,14 +1365,8 @@ def tg43_mbdca_comparison_histograms():
                 y_pos_mid = (y_pos[:-1] + y_pos[1:]) / 2.0
                 z_pos_mid = (z_pos[:-1] + z_pos[1:]) / 2.0
 
-                if shield_index == 0:
-                    ax_x, ax_y = 0, 0
-                elif shield_index == 1:
-                    ax_x, ax_y = 0, 1
-                elif shield_index == 2:
-                    ax_x, ax_y = 1, 0
-                else:
-                    ax_x, ax_y = 1, 1
+                ax_x = shield_index // 2
+                ax_y = shield_index % 2
 
                 tg43_dose = tg43_full_data.dose * dose_scale_factor
                 mlwa_dose = mlwa_full_data.dose * dose_scale_factor

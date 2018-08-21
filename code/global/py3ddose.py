@@ -5,8 +5,6 @@
 
 from __future__ import division
 
-from numpy import where, logical_and
-
 from gzip import open as gOpen
 
 import numpy
@@ -23,7 +21,7 @@ def position_to_index(p, A):
     Outputs:
     """
     
-    return where(logical_and(p >= A[:-1], p < A[1:]))[0][0]
+    return numpy.where(numpy.logical_and(p >= A[:-1], p < A[1:]))[0][0]
 
 class DoseFile(object):
 
@@ -55,7 +53,8 @@ class DoseFile(object):
             with gOpen(file_name, 'rb') as data_file:
                 data = data_file.read().split('\n')
         else:
-            data = file(file_name).read().split('\n')
+            with open(file_name, 'rb') as data_file:
+                data = data_file.read().split('\n')
         
         cur_line = 0
         
