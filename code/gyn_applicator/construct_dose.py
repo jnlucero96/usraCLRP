@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+
 from gzip import open as gOpen
 from glob import glob
-from os.path import expanduser
+from os.path import expanduser, isfile, isdir
+from os import getcwd
 import numpy
 
 # define dose file object 
@@ -52,14 +54,6 @@ class DoseFile(object):
         positions = [positions[0], positions[1], positions[2]]
         
         self.positions = positions
-        self.spacing = [numpy.diff(p) for p in self.positions]
-        self.resolution = [s[0] for s in self.spacing if s.all()]
-        self.origin = numpy.add( 
-            [p[0] for p in positions], numpy.array(self.resolution)/2.
-            )
-        
-        assert len(self.resolution) == 3, \
-        "Non-linear resolution in either x, y or z."
         
         dose = []
         while len(dose) < self.size:
@@ -67,13 +61,8 @@ class DoseFile(object):
             dose += line_data
             cur_line += 1
         
-        self.dose = numpy.array(dose)
-        assert len(self.dose) == self.size, \
-        "len of dose = {} (expect {})".format(len(self.dose), self.size)
         # have dose array be in order (x, y, z)
         self.dose = self.dose.reshape((self.shape)).transpose((2,1,0))
-        assert self.dose.size == self.size, \
-        "Dose array size does not match that specified."
         
         if load_uncertainty:
             uncertainty = []
@@ -96,125 +85,67 @@ class DoseFile(object):
         # reset the shape of array to have the proper (x,y,z) ordering
         self.shape = (x, y, z)
 
-    def max(self):
-        return self.dose.max()
-        
-    def min(self):
-        return self.dose.min()
-
-    @property
-    def x_extent(self):
-        return self.positions[0][0], self.positions[0][-1]
-
-    @property
-    def y_extent(self):
-        return self.positions[1][0], self.positions[1][-1]
-    
-    @property
-    def z_extent(self):
-        return self.positions[2][0], self.positions[2][-1]
-
 def checks(weights, len_weight, ref_dose_files, len_dose_files):
 
     type_of_weights = type(weights)
 
     if len_weight != len_dose_files:
 
+        print("WARNING: Number of weights specified not the same as the number \
+        of reference dose files specified.") 
+
         difference = len_dose_files - len_weight
 
-        if difference > 0:
-            print("WARNING: Number of weights specified not the same as the number \
-            of reference dose files specified.") 
+        while True:
+            print("Should we set the unspecified weights to unity [y/n]?")
+            answer = input(">> ")
 
-            while True:
-                print("Should we set the unspecified weights to unity [y/n]?")
-                answer = input(">> ")
-
-                if answer.lower() in ('y', 'yes'):
+            if answer.lower() in ('y', 'yes'):
+                
+                if type_of_weights is numpy.ndarray:
+                    array_to_append = numpy.ones(len_dose_files - len_weight)
+                    numpy.append(weights, array_to_append)
+                elif type_of_weights is list:
                     
-                    if type_of_weights is numpy.ndarray:
-                        array_to_append = numpy.ones(len_dose_files - len_weight)
-                        numpy.append(weights, array_to_append)
-                    elif type_of_weights is list:
-                        difference = len_dose_files - len_weight
-                        counter = 0
-                        while counter < difference:
-                            weights.append(1.0)
-                            counter += 1
-                    else:
-                        print(
-                            "ALERT: Weights should either be array or list. Type \
-                            not understood. Exiting program now..."
-                            ); exit(1)
-                    break
-                elif answer.lower() in ('n', 'no'):
-                    print("Please provide the remaining weights in space-delimited format")
-                    remaining_list = list(map(float, input(">> ").split()))
-                    
-                    while len(remaining_list) != abs(difference):
-                        print(
-                            "You have not specified the correct number of \
-                            remaining weights. The number of remaining weights \
-                            that you need to specify is {0}. Please input the \
-                            weights again.".format(difference)
-                            )
-                        remaining_list = list(map(float, input(">> ").split()))
-
-                    if type_of_weights is numpy.ndarray:
-                        array_to_append = numpy.array(remaining_list)
-                        numpy.append(weights, array_to_append)
-                    elif type_of_weights is list:
-                        for remaining_weight in remaining_list:
-                            weights.append(remaining_weight)
-                    else:
-                        print(
-                            "ALERT: Weights should either be array or list. Type \
-                            not understood. Exiting program now..."
-                            ); exit(1)
-                    break
-                else: 
-                    print("Input not understood. Please input answer again [y/n].")
-                    continue
-                    
-        elif difference < 0:
-            print("WARNING: Number of reference dose files specified not the same \
-            as the number weights specified.")
-
-            while True: 
-                print("Do you want to ignore the extra specified weights")
-                answer = input(">> ")
-                if answer in ('y', 'yes'):
-                    print("Ignoring the extra specified weights.")
-                    weights = weights[:len_dose_files]
-                elif answer in ('n', 'no'): 
-                    print("Please input the correct weights.")
-                    correct_weights = list(map(float, input(">> ").split()))
-                    
-                    while len(correct_weights) != len_dose_files:
-                        print(
-                            "You have not specified the correct number of \
-                            remaining weights. The number of weights \
-                            that you need to specify is {0}. Please input the \
-                            weights again.".format(len_dose_files)
-                            )
-                        correct_weights = list(map(float, input(">> ").split()))
-
-                    if type_of_weights is numpy.ndarray:
-                        weights = numpy.array(correct_weights)
-                    elif type_of_weights is list:
-                        weights = correct_weights
-                    else:
-                        print(
-                            "ALERT: Weights should either be array or list. Type \
-                            not understood. Exiting program now..."
-                            ); exit(1)
-                    break
-                else: 
+                    counter = 0
+                    while counter < difference:
+                        weights.append(1.0)
+                        counter += 1
+                else:
                     print(
-                        "Input not understood. Please input answer again \
-                        [y/n]."
+                        "ALERT: Weights should either be array or list. Type \
+                        not understood. Exiting program now..."
+                        ); exit(1)
+                break
+            elif answer.lower() in ('n', 'no'):
+                print("Please provide the remaining weights in space-delimited format")
+                remaining_list = list(map(float, input(">> ").split()))
+                
+                while len(remaining_list) != abs(difference):
+                    print(
+                        "You have not specified the correct number of \
+                        remaining weights. The number of remaining weights \
+                        that you need to specify is {0}. Please input the \
+                        weights again.".format(difference)
                         )
-                    continue
+                    remaining_list = list(map(float, input(">> ").split()))
+
+                if type_of_weights is numpy.ndarray:
+                    array_to_append = numpy.array(remaining_list)
+                    numpy.append(weights, array_to_append)
+                elif type_of_weights is list:
+                    for remaining_weight in remaining_list:
+                        weights.append(remaining_weight)
+                else:
+                    print(
+                        "ALERT: Weights should either be array or list. Type \
+                        not understood. Exiting program now..."
+                        ); exit(1)
+                break
+            else: 
+                print("Input not understood. Please input answer again [y/n].")
+                continue
+                
     else:
         pass
 
@@ -246,7 +177,7 @@ def construct_dose(weights_input, ref_dose_files_input, get_uncertainty):
         len(ref_dose_files_input)
         )
 
-    max_weight = max(weights)
+    max_weight = max(weights_input)
 
     if type_of_weights is numpy.ndarray:
         weights = weights_unscaled / max_weight
@@ -255,43 +186,84 @@ def construct_dose(weights_input, ref_dose_files_input, get_uncertainty):
 
     for index, ref_file in enumerate(ref_dose_files):
         data = DoseFile(ref_file, load_uncertainty=get_uncertainty)
-        if index = 0:
-            resultant_dose = resultant_uncertainty = zeros(data.shape)
+        if index == 0:
+            resultant_dose = resultant_uncertainty = numpy.zeros(data.shape)
         
         resultant_dose += weights[index] * data.dose
         if get_uncertainty:
-            resultant_uncertainty += (weights[index] * data.uncertainty) ** 2
+            resultant_uncertainty += (weights[index] * data.uncertainty * data.dose) ** 2
 
     resultant_uncertainty = numpy.sqrt(resultant_uncertainty)
 
-    return resultant_dose, resultant_uncertainty
+    x_pos, y_pos, z_pos, = numpy.array(data.positions)
+    x_pos_mid = (x_pos[:-1] + x_pos[1:]) / 2
+    y_pos_mid = (y_pos[:-1] + y_pos[1:]) / 2
+    z_pos_mid = (z_pos[:-1] + z_pos[1:]) / 2
+
+    return resultant_dose, resultant_uncertainty, (x_pos_mid, y_pos_mid, z_pos_mid)
         
-def main():
+def main(save_dose=True):
 
-    print(
-        "Please input the file path to the directory containing \
-        reference dose files"
-        )
-    target_dir = expanduser(input(">> "))
-    ref_dose_files = [ref_file for ref_file in glob(target_dir + '/*.3ddose')]
-    print(
-        "Please input weights for the reference dose files separated by \
-        whitespace. You need to input in {0} weights".format(len(ref_dose_files))
-        )
-    weights_input = list(map(float, input(">> ").split()))
+    cwd = getcwd()
 
-    dose, uncertainty = construct_dose(
-        weights_input, ref_dose_files, get_uncertainty=
-        )
+    print("Please input the size of the Nucletron applicator you wish to work with.")
+    applicator = input(">> ")
+    if applicator not in ('25', '30', '35', '40'):
+        while applicator not in ('25', '30', '35', '40'):
+            print("That is not a valid applicator size. Please input in another size.")
+            applicator = input(">> ")
 
-    if save_dose:
-        with gOpen('resultant_file.dat', 'w') as gfile:
-            for dose_value, uncertainty_val in zip(dose, uncertainty):
-                gfile.write(
-                    '{0:.15f}\t {1:.15f}\n'.format(dose_value, uncertainty_val)
-                    )
-
+    target_dir = cwd + '/reference/{0}mm_applicator'.format(applicator)
     
+    if not isdir(target_dir):
+        print("Cannot find the reference directory containing the reference dose files.")
+        print("Please ensure that the reference directory is in the same directory as this script.")
+        exit(1)
+    
+    ref_dose_files = [ref_file for ref_file in glob(target_dir + '/*.3ddose.gz')]
+    print("Do you want to use the default weights [y/n]?")
+    while True:
+        answer = input(">> ")
+        if answer.lower() in ('y', 'yes'):
+            print("Setting the default weights.")
+            weights_input = numpy.array([
+                0.32032854, 0.5687885, 1.00, 0.91991786, 0.49897331,
+                0.3100616, 0.32238193, 0.3798768, 0.59958932, 0.82956879, 1.00
+                ])
+            break
+        elif answer.lower() in ('n', 'no'):
+            print(
+                "Please input weights for the reference dose files separated by \
+                whitespace. You need to input "
+                + "in {0} weights".format(len(ref_dose_files))
+            )
+            user_input = input(">> ")
+            if isfile(expanduser(user_input)):
+                weights_input = numpy.loadtxt(expanduser(user_input))
+            else:
+                weights_input = list(map(float, user_input.split()))
+            break
+        else:
+            print "Input not understood."
 
+    dose, uncertainty, positions = construct_dose(
+        weights_input, ref_dose_files, get_uncertainty=True
+        )
+
+    with gOpen('resultant_file.dat', 'w') as gfile:
+        for x_index, x in positions[0]:
+            for y_index, y in positions[1]:
+                for z_index, z in positions[2]:
+                    gfile.write(
+                        '{0}\t{1}\t{2}\t{3:.15f}\t{4:.15f}\n'.format(
+                            x, y, z, 
+                            dose[x_index, y_index, z_index], 
+                            uncertainty[x_index, y_index, z_index]
+                            )
+                        )   
+                
     return 0
+
+if  __name__ == "__main__":
+    main()
 
