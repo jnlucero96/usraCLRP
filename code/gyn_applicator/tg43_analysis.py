@@ -20,12 +20,7 @@ from matplotlib.pyplot import subplots, close
 from normalize import get_conversion_factor
 
 def calc_per_diff(A,B):
-
-    numerator = (A - B).__abs__()
-    denominator = 0.5 * (A + B)
-    as_percent = (numerator / denominator) * 100
-
-    return as_percent
+    return ((A - B) / B) * 100
 
 def generate_tdvh_tg43():
 
@@ -518,8 +513,8 @@ def isodose_plot_compare():
         sharex='all', sharey='all'
     )
 
-    # source = 'V2-FlexiCompare'
-    # source = 'V1-FlexiCompare'
+    # source = 'Flexi-V2Compare'
+    # source = 'Flexi-V1Compare'
     source = 'V2-V1Compare'
     
     if source is 'V2-V1Compare':
@@ -535,7 +530,7 @@ def isodose_plot_compare():
             data2.dose * 82105378673169.89
             )
         sup_title = 'microSelectron-v1 to microSelectron-v2\n Dose Comparison'
-    elif source is 'V1-FlexiCompare':
+    elif source is 'Flexi-V1Compare':
         print "Source is:", source
         data1 = DoseFile(
             target_dir + '/tg43_Flexisource_2mm.phantom_wo_box.3ddose.gz'
@@ -544,11 +539,11 @@ def isodose_plot_compare():
             target_dir + '/tg43_microSelectronV1_2mm.phantom_wo_box.3ddose.gz'
         )
         comparison_matrix = calc_per_diff(
-            data2.dose * 82105378673169.89,
-            data1.dose * 79906971237618.34
+            data1.dose * 79906971237618.34,
+            data2.dose * 82105378673169.89
             )
         sup_title = 'Flexisource to microSelectron-v1\n Dose Comparison'
-    elif source is 'V2-FlexiCompare':
+    elif source is 'Flexi-V2Compare':
         print "Source is:", source
         data1 = DoseFile(
             target_dir + '/tg43_Flexisource_2mm.phantom_wo_box.3ddose.gz'
@@ -557,22 +552,14 @@ def isodose_plot_compare():
             target_dir + '/tg43_microSelectronV2_2mm.phantom_wo_box.3ddose.gz'
         )
         comparison_matrix = calc_per_diff(
-            data2.dose * 82583025662064.77,
-            data1.dose * 79906971237618.34
+            data1.dose * 79906971237618.34,
+            data2.dose * 82583025662064.77
             )
         sup_title = 'Flexisource to microSelectron-v2\n Dose Comparison'
     else:
         print "Prompt not understood."; exit(1)
     
     Nx, Ny, Nz = data1.shape
-
-    # data1.dose *= 2.2861e14 # scale to total treatment time
-    # data1.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
-    # mSV1_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
-    # flexi_data.dose *= 8.2573429808917e13  # scale to maximum individual dwell time
-
-    # data1.dose /= 5  # normalize to desired dose of 5 Gy
-    # data1.dose *= 100  # express in percent. Should see 100% at x=-2cm
 
     x_min, x_max = data1.x_extent
     y_min, y_max = data1.y_extent
@@ -588,19 +575,19 @@ def isodose_plot_compare():
 
     xy_contour = ax.contourf(
         x_pos_mid, y_pos_mid, 
-        comparison_matrix[:,:,position_to_index(0.0,z_pos_mid)].transpose(),
-        arange(0, 14.5, 0.5),
+        comparison_matrix[:,:,position_to_index(0.0,z_pos)].transpose(),
+        arange(-7, 10.5, 0.5),
         # [5, 10, 20, 50, 100]
-        cmap=get_cmap('pink')
+        cmap=get_cmap('spectral')
     )
     # ax.set_title(vox_size_list,fontsize=14)
 
     xz_contour = ax2.contourf(
         x_pos_mid, z_pos_mid, 
-        comparison_matrix[:, position_to_index(0.0, y_pos_mid), :].transpose(),
-        arange(0, 14.5, 0.5),
+        comparison_matrix[:, position_to_index(0.0, y_pos), :].transpose(),
+        arange(-7, 10.5, 0.5),
         # [5, 10, 20, 50, 100]
-        cmap=get_cmap('pink')
+        cmap=get_cmap('spectral')
     )
     # ax2.set_title(vox_size_list, fontsize=14)
 
@@ -631,10 +618,10 @@ def isodose_plot_compare():
     ax3.grid(True)
     ax3.xaxis.set_tick_params(labelsize=14)
     ax3.yaxis.set_tick_params(labelsize=14)
-    ax3.set_xticks(arange(0, 5.1 + 1, 0.5))
-    ax3.set_xlim([0, 5])
+    ax3.set_xticks(arange(-5, 5 + 1, 1))
+    ax3.set_xlim([-5, 5])
     ax3.set_yticks(arange(0, 2.1 + 1, 0.5))
-    ax3.set_ylim([0, 2])
+    ax3.set_ylim([0, 1])
     # ax2.vlines([-2, 2], -10, 10, linestyles='dashed', lw=2.0)
 
     fig.text(
@@ -735,7 +722,7 @@ def isodose_plot_compare():
     fig3.subplots_adjust(left=left, bottom=bottom, right=right, top=top)
 
     fig3.savefig(
-        pwd + '/tg43_' + source + '_xz_comparison_histograms.pdf'
+        pwd + '/tg43_' + source + '_comparison_histograms.pdf'
     )
     
 if __name__ == "__main__":
