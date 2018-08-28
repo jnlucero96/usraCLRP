@@ -18,11 +18,15 @@ from pydicom import dcmread
 def get_target_dir():
 
     """\
-    Description:
+    Description: Ask user to point to the directory containing the relevant \
+    dicom files AND ONLY the relevant dicom files
 
     Inputs:
+    VOID
 
     Outputs:
+    :param target_dir: File path to directory containing dicom files
+    :param target_dir: str
     """
 
     while True:
@@ -250,8 +254,7 @@ def get_egs_brachy_settings(file_source,**kwargs):
     
     Outputs:
     :param :
-    :type :
-    \
+    :type :\
     """
 
     # Call environment variable EGS_BRACHY pointing to egs_brachy directory

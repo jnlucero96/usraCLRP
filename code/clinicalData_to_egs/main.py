@@ -23,7 +23,8 @@ from special_funcs import perform_metallic_artifact_reduction as MAR
 def main(egsphant_create=True, scale_dose=False, run_metallic_reduction=False):
 
     """\
-    Description: 
+    Description: Main function of code, calls other function to construct \
+    egsphant from 
 
     Inputs:
 
