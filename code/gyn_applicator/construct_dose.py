@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 from gzip import open as gOpen
 from glob import glob
 from os.path import expanduser, isfile, isdir
@@ -8,18 +7,13 @@ from os import getcwd
 import numpy
 
 # define dose file object 
+# modified from github/christopherpoole/3DDose
 class DoseFile(object):
 
-    # copied from github/christopherpoole/3DDose
+    """Description: Loads 3ddose file into numpy arrays"""
 
     def __init__(self, file_name, load_uncertainty=False):
-        """
-        Attempts to detect the dose file etension automatically. If an unknown
-        extension is detected, loads a .3ddose file by default.
-        """
-
         self._load_3ddose(file_name, load_uncertainty)
-        
         self.shape = self.dose.shape
         self.size = self.dose.size
     
@@ -72,20 +66,38 @@ class DoseFile(object):
                 cur_line += 1
             self.uncertainty = numpy.array(uncertainty)  
             assert len(self.uncertainty) == self.size, \
-            "len of uncertainty = {} (expected {})".format(
-                len(self.uncertainty), self.size
-                )
+            "len of uncertainty = {} (expected {})".format(len(self.uncertainty), self.size)
             # have uncertainty array be in order (x, y, z)
-            self.uncertainty = self.uncertainty.reshape(
-                (self.shape)
-                ).transpose((2,1,0))
+            self.uncertainty = self.uncertainty.reshape((self.shape)).transpose((2,1,0))
             assert self.uncertainty.size == self.size, \
             "uncertainty array size does not match that specified."
 
         # reset the shape of array to have the proper (x,y,z) ordering
         self.shape = (x, y, z)
 
-def checks(weights, len_weight, ref_dose_files, len_dose_files):
+def checks(weights, len_weight, len_dose_files):
+
+    """\
+    Description: Does a few checks that happen before the weighted superposition \
+    of the reference dose files is created. Specifically checks for whether \
+    enough weights have been specified for the reference dose files. 
+
+    Inputs:
+    :param weights: series of weights that are used during the superposition
+    :type weights: numpy.array or list
+    :param len_weight: measure of how many weights have been specified
+    :type len_weight: numpy.array or list
+    :param len_dose_files: measure of how many reference files there are 
+    :type len_dose_files: int
+
+    Outputs:
+    :param weights: series of weights, where number of weights matches the \
+    number of reference files
+    :type weights: numpy.ndarray or list
+    :param type_of_weights: tells whether weights array is a numpy array or \
+    Python list
+    :type type_of_weights: type\
+    """
 
     type_of_weights = type(weights)
 
@@ -96,15 +108,16 @@ def checks(weights, len_weight, ref_dose_files, len_dose_files):
 
         difference = len_dose_files - len_weight
 
+        print("Should we set the unspecified weights to unity [y/n]?")
         while True:
-            print("Should we set the unspecified weights to unity [y/n]?")
+            
             answer = input(">> ")
 
             if answer.lower() in ('y', 'yes'):
                 
                 if type_of_weights is numpy.ndarray:
                     array_to_append = numpy.ones(len_dose_files - len_weight)
-                    numpy.append(weights, array_to_append)
+                    weights = numpy.append(weights, array_to_append)
                 elif type_of_weights is list:
                     
                     counter = 0
@@ -132,7 +145,7 @@ def checks(weights, len_weight, ref_dose_files, len_dose_files):
 
                 if type_of_weights is numpy.ndarray:
                     array_to_append = numpy.array(remaining_list)
-                    numpy.append(weights, array_to_append)
+                    weights = numpy.append(weights, array_to_append)
                 elif type_of_weights is list:
                     for remaining_weight in remaining_list:
                         weights.append(remaining_weight)
@@ -149,7 +162,7 @@ def checks(weights, len_weight, ref_dose_files, len_dose_files):
     else:
         pass
 
-    return weights, ref_dose_files, type_of_weights
+    return weights, type_of_weights
 
 def construct_dose(weights_input, ref_dose_files_input, get_uncertainty):
 
@@ -166,15 +179,15 @@ def construct_dose(weights_input, ref_dose_files_input, get_uncertainty):
     :type dose_files: bool
 
     Output: 
-    :param dose_array:
-    :type dose_array:
-    :param resultant_uncertainty:
-    :type resultant_uncertainty:
+    :param dose_array: the dose array created by the weighted superposition of \
+    the reference dose array
+    :type dose_array: numpy.ndarray
+    :param resultant_uncertainty: the absolute uncertainty of the dose array
+    :type resultant_uncertainty: numpy.ndarray\
     """
 
-    weights_unscaled, ref_dose_files, type_of_weights = checks(
-        weights_input, len(weights_input), ref_dose_files_input, 
-        len(ref_dose_files_input)
+    weights_unscaled, type_of_weights = checks(
+        weights_input, len(weights_input), len(ref_dose_files_input)
         )
 
     max_weight = max(weights_input)
@@ -184,14 +197,16 @@ def construct_dose(weights_input, ref_dose_files_input, get_uncertainty):
     elif type_of_weights is list:
         weights = [weight / max_weight for weight in weights_unscaled]
 
-    for index, ref_file in enumerate(ref_dose_files):
+    for index, ref_file in enumerate(ref_dose_files_input):
         data = DoseFile(ref_file, load_uncertainty=get_uncertainty)
         if index == 0:
             resultant_dose = resultant_uncertainty = numpy.zeros(data.shape)
         
         resultant_dose += weights[index] * data.dose
         if get_uncertainty:
-            resultant_uncertainty += (weights[index] * data.uncertainty * data.dose) ** 2
+            resultant_uncertainty += (
+                weights[index] * data.uncertainty * data.dose
+                ) ** 2
 
     resultant_uncertainty = numpy.sqrt(resultant_uncertainty)
 
@@ -200,9 +215,22 @@ def construct_dose(weights_input, ref_dose_files_input, get_uncertainty):
     y_pos_mid = (y_pos[:-1] + y_pos[1:]) / 2
     z_pos_mid = (z_pos[:-1] + z_pos[1:]) / 2
 
-    return resultant_dose, resultant_uncertainty, (x_pos_mid, y_pos_mid, z_pos_mid)
+    position_tuple = (x_pos_mid, y_pos_mid, z_pos_mid)
+
+    return resultant_dose, resultant_uncertainty, position_tuple
         
-def main(save_dose=True):
+def main():
+
+    """\
+    Description: Run superposition calculation.
+
+    Outputs:
+    :param gfile: Output dat file containing the resultant dose from doing \
+    weighted superposition of the reference dose files. Has 5 columns containing, \
+    in order, the x-coordinate, the y-coordinate, the z-coordinate, the dose at coordinate, \
+    and error of dose at coordinate.
+    :type gfile: gzipped data file\
+    """
 
     cwd = getcwd()
 
@@ -229,7 +257,7 @@ def main(save_dose=True):
             weights_input = numpy.array([
                 0.32032854, 0.5687885, 1.00, 0.91991786, 0.49897331,
                 0.3100616, 0.32238193, 0.3798768, 0.59958932, 0.82956879, 1.00
-                ])
+                ]) # standard weights from Ali & Cygler
             break
         elif answer.lower() in ('n', 'no'):
             print(
@@ -246,10 +274,12 @@ def main(save_dose=True):
         else:
             print "Input not understood."
 
+    # construct the dose from weighted superposition of the reference dose files
     dose, uncertainty, positions = construct_dose(
         weights_input, ref_dose_files, get_uncertainty=True
         )
 
+    # write into file
     with gOpen('resultant_file.dat', 'w') as gfile:
         for x_index, x in positions[0]:
             for y_index, y in positions[1]:
