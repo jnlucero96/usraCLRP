@@ -58,8 +58,8 @@ def main(egsphant_create=True, scale_dose=False, run_metallic_reduction=False):
             ref_intercept=reference_dict["INTERCEPT"], 
             SIZE_OF_GRID=reference_dict["SIZE OF GRID"], 
             bounds=reference_dict["BOUNDS"],
-            path_to_calibration='default',
-            path_to_media='default',
+            path_to_calibration='ask',
+            path_to_media='ask',
             path_to_egsphants=None,
             egsphant_name=egsphant_name
         )
