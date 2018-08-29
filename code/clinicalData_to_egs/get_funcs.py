@@ -159,11 +159,15 @@ def get_CT_calibration(path_to_calibration=None):
     used to do the density assignment of the egs_phant
     
     Inputs:
+    :param path_to_calibration: string to indicate whether to go with default \
+    or to ask the user for the CT calibration path. Set in main.py
+    :type path_to_calibration: str
 
     Outputs:
-    :param HU:
+    :param HU: array of houndsfield units (HU)
     :type HU: ndarray
-    :param mass_density:
+    :param mass_density: array of mass density corresponding to the \
+    houndsfield units in HU. Order is the same so association is preserved.\
     :type mass_density: ndarray\
     """
 
@@ -206,8 +210,21 @@ def get_media(path_to_media=None):
     used to do the tissue assignment of the egs_phant
 
     Inputs:
+    :param path_to_media: string to indicate whether to go with default or to \
+    ask the user for the media/tissue assignment file path. Set in main.py
+    :type path_to_media: str
 
-    Outputs:\
+    Outputs:
+    :param media_name: The informal name for the media
+    :type media_name: list of str
+    :param media_HU_min: The minimum of the range of HU for specific media
+    :type media_HU_min: numpy ndarray
+    :param media_HU_max: The maximum of the range of HU for specific media
+    :type media_HU_max: numpy ndarray
+    :param media_HU: The actual HU assignment for the media
+    :type media_HU: numpy ndarray
+    :param PEGS4_name: Name of material in material.dat file
+    :type PEGS4_name: list of str\
     """
 
     cwd = getcwd()  # This is not wise. Need to figure out what the best way to call this is
@@ -255,14 +272,8 @@ def get_egs_brachy_settings(file_source,**kwargs):
     """\
     Description: Pull the settings needed for the egs_brachy simulation from 
     file input by user
-
-    Inputs:
-    :param :
-    :type :
     
-    Outputs:
-    :param :
-    :type :\
+    *** currently not incorporated in main code ***
     """
 
     # Call environment variable EGS_BRACHY pointing to egs_brachy directory

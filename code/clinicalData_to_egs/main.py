@@ -27,8 +27,15 @@ def main(egsphant_create=True, scale_dose=False, run_metallic_reduction=False):
     egsphant from 
 
     Inputs:
+    :param egsphant_create: Switch to run egsphant creation
+    :type egsphant_create: bool
+    :param scale_dose: Switch to scale dose or not
+    :type scale_dose: bool
+    :param run_metallic_reduction: Switch to run metallic artifiact reduction or not
+    :type run_metallic_reduction: bool
 
-    Outputs:\
+    Outputs:
+    VOID\
     """
 
     root_dir = get_target_dir()
@@ -63,6 +70,8 @@ def main(egsphant_create=True, scale_dose=False, run_metallic_reduction=False):
             path_to_egsphants=None,
             egsphant_name=egsphant_name
         )
+
+    return 0
 
 if __name__ == "__main__":
     main()

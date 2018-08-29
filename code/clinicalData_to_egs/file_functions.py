@@ -20,19 +20,7 @@ def load_phantom(patientID, label, p_width):
     Function that takes in patient ID and label to return the 
     doses and errors associated with that patient in 1D arrays.
 
-    Input:
-    :param patientID:
-    :type patientID:
-    :param label:
-    :type label:
-    :param p_width:
-    :type p_width:
-
-    Output:
-    :param dose_array:
-    :type dose_array:
-    :param error_array:
-    :type error_array:\
+    *** currently not incorporated into main code ***\
     """
 
     p_data = []
@@ -79,12 +67,34 @@ def create_EGSPhant(
     CT calibration curve.
 
     Inputs:
-    :param :
-    :type :
+    :param slice_array_lst: Pixel intensity data in every slice of the CT image
+    :type slice_array_lst: list
+    :param contour_map: List of all the contours in the image and the shape \
+    of the contours
+    :type contour_map: list
+    :param ref_intercept: Rescaling constant for the HU readings
+    :type ref_intercept: int
+    :param SIZE_OF_GRID: Number of voxels in each given dimension
+    :type SIZE_OF_GRID: tuple
+    :param bounds: Coordinates of the bounding planes in each of the 3 \
+    dimensions
+    :type bounds: list
+    :param path_to_calibration: Full file path to where the CT calibration \
+    file is stored
+    :type path_to_calibration: str
+    :param path_to_media: Full file path to where the tissue assignment file \
+    is stored
+    :type path_to_media: str
+    :param path_to_egsphants: Full directory path to where the egsphants are \
+    to be stored after they are created
+    :type path_to_egsphants: str
+    :param egsphant_name: The BASENAME of the egsphant so the output file has \
+    the name BASENAME.egsphant
+    :type egsphant_name: str
 
     Outputs:
-    :param :
-    :type :\
+    :param egsphant: egsphant file created in the specified directory
+    :type egsphant: egsphant file\
     """
 
     print("\n\n" + "="*50)
@@ -242,11 +252,10 @@ def create_EGSPhant(
 def create_egsinp(egsinp_path, script_name):
 
     """\
-    Description:
+    Description: Given user defaults construct egsinp file that can be used to
+    run egs_brachy simulations 
 
-    Inputs:
-
-    Outputs:\
+    *** currently not incorporated into main code ***\
     """
 
     print("\n Attempting to create input file")
