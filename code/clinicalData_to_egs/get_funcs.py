@@ -8,7 +8,7 @@ from __future__ import division
 from sys import exit
 from os import getcwd, environ
 from datetime import date
-from os.path import isdir, exists,expanduser
+from os.path import isdir, exists, expanduser
 
 from numpy import loadtxt, genfromtxt, array
 from pandas import read_csv
@@ -155,20 +155,25 @@ def get_ref_info_from_ref_slice(ref_file_1, ref_file_2, num_CT_files):
 def get_CT_calibration(path_to_calibration=None):
     
     """\
-    Description:
+    Description: Find the location of the CT calibration curve that is to be \
+    used to do the density assignment of the egs_phant
     
     Inputs:
 
-    Outputs:\
+    Outputs:
+    :param HU:
+    :type HU: ndarray
+    :param mass_density:
+    :type mass_density: ndarray\
     """
 
     cwd = getcwd()  # This is not wise. Need to figure out what the best way to call this is
     
-    if not path_to_calibration:
+    if not path_to_calibration or path_to_calibration.lower() == 'ask':
         while True:
-            path_to_calibration = input(
+            path_to_calibration = expanduser(input(
                 "Please input the FULL file path to the CT calibration data:>> "
-            )
+            ))
             if not exists(path_to_calibration):
                 print(
                     "This is not a valid file path to an existing " 
@@ -176,7 +181,7 @@ def get_CT_calibration(path_to_calibration=None):
                     )
                 answer = input("Use default (Peppa et al.)? [y/n]:>> ")
                 if answer.lower() in ('y','yes'):
-                    path_to_calibration = cwd + '/lib/calibration/PeppaCalibrationCurve.dat'
+                    path_to_calibration = cwd + '/lib/calibration/PeppaCalibrationCurve_Full.dat'
                 elif answer.lower() in ('n', 'no'):
                     pass
                 else: 
@@ -186,7 +191,9 @@ def get_CT_calibration(path_to_calibration=None):
     else:
         if path_to_calibration.lower() == 'default':
             print("Calling default calibration curve.")
-            path_to_calibration = cwd + '/lib/calibration/PeppaCalibrationCurve2.dat'
+            # use curve 3 as default because that's what Stephen used to 
+            # generate the Test Case 3 egsphant
+            path_to_calibration = cwd + '/lib/calibration/PeppaCalibrationCurve3.dat' 
 
     HU, mass_density = loadtxt(path_to_calibration,unpack=True)
 
@@ -195,7 +202,8 @@ def get_CT_calibration(path_to_calibration=None):
 def get_media(path_to_media=None):
 
     """\
-    Description:
+    Description: Find the location of the media files that is to be \
+    used to do the tissue assignment of the egs_phant
 
     Inputs:
 
@@ -204,7 +212,7 @@ def get_media(path_to_media=None):
 
     cwd = getcwd()  # This is not wise. Need to figure out what the best way to call this is
 
-    if not path_to_media:
+    if not path_to_media or path_to_media.lower() == 'ask':
         while True:
             path_to_media = input(
                 "Please input the FULL file path to the media definitions file curve:>> "
@@ -216,7 +224,7 @@ def get_media(path_to_media=None):
                     )
                 answer = input("Use default (Peppa et al.)? [y/n]:>> ")
                 if answer.lower() in ('y', 'yes'):
-                    path_to_media = cwd + '/lib/calibration/PeppaMedia.dat'
+                    path_to_media = cwd + '/lib/calibration/PeppaMedia_Full.dat'
                 elif answer.lower() in ('n', 'no'):
                     pass
                 else:
@@ -225,7 +233,7 @@ def get_media(path_to_media=None):
                 break
     elif path_to_media.lower() == 'default':
         print("Calling default media file.")
-        path_to_media = cwd + '/lib/media/PeppaMedia.dat'
+        path_to_media = cwd + '/lib/media/PeppaMedia_Full.dat'
 
     media_info = read_csv(path_to_media, delim_whitespace=True, header=None)
 
