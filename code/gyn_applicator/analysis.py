@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env python2
 # author: Joseph Lucero
 # created on: 3 May 2018 08:23:46
 # purpose: plotting 3ddose files
@@ -1247,8 +1247,8 @@ def isodose_plot_compare():
     ]
 
     vox_size_lst = [
-        # '1',
-        '2'
+        '1'
+        # '2'
     ]
 
     for diam_index, diameter in enumerate(outer_diams):
@@ -1323,10 +1323,10 @@ def isodose_plot_compare():
 
                 if shield_type != '0':
                     ref_data_xy = loadtxt(
-                        reference_file_xy.format(shield_type)
+                        target_ref_dir + reference_file_xy.format(shield_type)
                     )
                     ref_data_xz = loadtxt(
-                        reference_file_xz.format(shield_type)
+                        target_ref_dir + reference_file_xz.format(shield_type)
                     )
                     ax[ax_x, ax_y].scatter(
                         ref_data_xy[:, 0], ref_data_xy[:, 1], marker='x', s=14,
@@ -1836,7 +1836,7 @@ if __name__ == "__main__":
     # dose_inv_position_plots()
     # rel_dose_position_plot()
     # isodose_plot(mode='mlwa')
-    # isodose_plot_compare()
-    tg43_mbdca_comparison_isodose_plot()
+    isodose_plot_compare()
+    # tg43_mbdca_comparison_isodose_plot()
     # tg43_mbdca_comparison_histograms()
 
