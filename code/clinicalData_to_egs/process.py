@@ -12,7 +12,6 @@ from pickle import load as pload
 from os.path import join, isfile, expanduser
 from pydicom import dcmread
 
-
 def process_CT(root_dir):
 
     """\
@@ -39,7 +38,7 @@ def process_CT(root_dir):
     print('=' * 50)
 
     # extract the CT filenames in the target directory
-    filename_CT_lst = glob(join(root_dir, 'CT*.dcm'))
+    filename_CT_lst = glob(join(root_dir, '*CT*.dcm'))
 
     # for CT_file in filename_CT_lst:
     #     print CT_file, dcmread(CT_file).SliceLocation
@@ -84,7 +83,7 @@ def process_RP(root_dir, scale_dose=False):
     """
 
     # extract the filenames in the RT directory
-    filename_RP_lst = glob(join(root_dir, 'RP*.dcm')); answer = 0 
+    filename_RP_lst = glob(join(root_dir, '*RP*.dcm')); answer = 0 
 
     num_RP_files = len(filename_RP_lst)
 
@@ -94,7 +93,7 @@ def process_RP(root_dir, scale_dose=False):
         print("There is more than one RT plan in this directory:")
         for index, file_name in enumerate(filename_RP_lst):
             print(str(index) + ": " + file_name)
-        answer = int(raw_input(
+        answer = int(input(
             "Which of the {0} files do you wish to use ".format(index + 1)
             + "as the plan file? Please input in the index [int]:>> "
         ))
@@ -156,7 +155,7 @@ def process_RS(root_dir, SIZE_OF_GRID):
     """
 
     # glob the contour files in the directory
-    contour_files = glob(join(root_dir, 'RS*.dcm')); answer = 0
+    contour_files = glob(join(root_dir, '*RS*.dcm')); answer = 0
 
     num_RS_files = len(contour_files)
     

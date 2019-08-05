@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env python3
 # author: Joseph Lucero
 # created on: 27 May 2018 15:39:30
 # purpose: turning patient CT files and dicom inputs to egs_brachy compatible files
